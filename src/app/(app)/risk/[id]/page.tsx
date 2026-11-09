@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { formatDate } from "@/lib/dates";
 import { HAZARD_FACTORS, KIND_LABELS, releaseProblems } from "@/lib/risk";
 import { requireOrg } from "@/lib/session";
+import { AttachmentsPanel } from "@/components/AttachmentsPanel";
 import { riskStep } from "../actions";
 import { AssessmentForm } from "../AssessmentForm";
 import { HazardForm } from "../HazardForm";
@@ -102,6 +103,7 @@ export default async function RiskDetail({ params }: { params: Promise<{ id: str
           <AssessmentForm organizationId={ctx.organization.id} assessment={ra} />
         </section>
       )}
+      <AttachmentsPanel ctx={ctx} entityType="RISK" entityId={ra.id} back={`/risk/${ra.id}`} title="Anlagen" hint="z. B. Messberichte, Herstellerangaben." />
     </div>
   );
 }

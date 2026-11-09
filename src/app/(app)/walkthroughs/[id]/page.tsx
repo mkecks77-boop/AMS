@@ -4,6 +4,7 @@ import { ActionsPanel } from "@/components/ActionsPanel";
 import { db } from "@/lib/db";
 import { formatDate, toInputDate } from "@/lib/dates";
 import { requireOrg } from "@/lib/session";
+import { AttachmentsPanel } from "@/components/AttachmentsPanel";
 import { complianceRate, RESULT_LABELS } from "@/lib/walkthroughs";
 import { answer } from "../actions";
 
@@ -79,6 +80,7 @@ export default async function WalkthroughDetail({ params }: { params: Promise<{ 
         </section>
       )}
       <ActionsPanel organizationId={ctx.organization.id} actions={w.actions} source={{ walkthroughId: w.id, sourceType: "AUDIT" }} back={`/walkthroughs/${w.id}`} canManage={ctx.can("actions.manage")} />
+      <AttachmentsPanel ctx={ctx} entityType="WALKTHROUGH" entityId={w.id} back={`/walkthroughs/${w.id}`} title="Fotos" hint="Fotos der Mängel – direkt vom Handy hochladen." />
     </div>
   );
 }

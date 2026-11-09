@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { formatDate, formatDateTime, toInputDate } from "@/lib/dates";
 import { ACTION_STATUS_LABELS, canTransition, LEVEL_LABELS, PRIORITY_LABELS, SOURCE_LABELS } from "@/lib/measures";
 import { requireOrg } from "@/lib/session";
+import { AttachmentsPanel } from "@/components/AttachmentsPanel";
 import { editAction, setStatus } from "../actions";
 
 export const metadata = { title: "Maßnahme" };
@@ -66,6 +67,7 @@ export default async function ActionDetail({ params }: { params: Promise<{ id: s
         <h2 className="mb-2 text-lg font-semibold">Verlauf</h2>
         <ul className="space-y-1">{history.map((h) => <li key={h.id}>{formatDateTime(h.createdAt)} · {h.user?.name ?? "System"} · {h.action === "action.status" ? `Status → ${ACTION_STATUS_LABELS[(h.details as { to: keyof typeof ACTION_STATUS_LABELS }).to]}` : h.action === "action.created" ? "angelegt" : "geändert"}</li>)}</ul>
       </section>
+      <AttachmentsPanel ctx={ctx} entityType="ACTION" entityId={a.id} back={`/actions/${a.id}`} title="Nachweise" hint="Fotos oder Belege zur Umsetzung." />
     </div>
   );
 }

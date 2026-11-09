@@ -9,6 +9,7 @@ import { classifyDue, formatDate, toInputDate } from "@/lib/dates";
 import { RESULT_LABELS, STATUS_LABELS } from "@/lib/equipment";
 import { STATUS_LABELS as BA_STATUS } from "@/lib/instructions";
 import { requireOrg } from "@/lib/session";
+import { AttachmentsPanel } from "@/components/AttachmentsPanel";
 import { changeStatus, recordInspection, toggleObligation } from "../actions";
 import { EquipmentForm } from "../EquipmentForm";
 import { equipmentOptions } from "../options";
@@ -175,6 +176,7 @@ export default async function EquipmentDetail({ params }: { params: Promise<{ id
           </ul>
         </section>
       )}
+      <AttachmentsPanel ctx={ctx} entityType="EQUIPMENT" entityId={eq.id} back={`/equipment/${eq.id}`} title="Dokumente" hint="Prüfberichte, Konformitätserklärung, Betriebsanleitung, Fotos." />
     </div>
   );
 }

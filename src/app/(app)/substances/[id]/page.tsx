@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/dates";
 import { cmrCategory, formatStatement, SIGNAL_WORD_LABELS, STORAGE_CLASSES } from "@/lib/ghs";
 import { STATUS_LABELS as BA_STATUS } from "@/lib/instructions";
 import { requireOrg } from "@/lib/session";
+import { AttachmentsPanel } from "@/components/AttachmentsPanel";
 import { addUse, decide, phaseOut, removeUse } from "../actions";
 import { SubstanceForm } from "../SubstanceForm";
 
@@ -128,6 +129,7 @@ export default async function SubstanceDetail({ params }: { params: Promise<{ id
           <button className="btn-secondary">Nicht mehr im Einsatz</button>
         </form>
       )}
+      <AttachmentsPanel ctx={ctx} entityType="SUBSTANCE" entityId={s.id} back={`/substances/${s.id}`} title="Sicherheitsdatenblatt & Dokumente" hint="Aktuelles Sicherheitsdatenblatt (PDF) hier ablegen." />
     </div>
   );
 }

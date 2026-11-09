@@ -57,6 +57,7 @@ model Organization {
   contractors        Contractor[]
   permits            Permit[]
   legalRequirements  LegalRequirement[]
+  attachments        Attachment[]
   /// Soll-Einsatzzeit der Sifa in Stunden pro Jahr (DGUV Vorschrift 2)
   sifaHoursTarget    Int?
   /// Ersthelferquote in Prozent (DGUV V1 § 26: 5 % Verwaltung/Handel, 10 % sonstige Betriebe)
@@ -1173,4 +1174,26 @@ model LegalRequirement {
   createdAt      DateTime         @default(now())
 
   @@index([organizationId, area])
+}
+
+// ───────────── Phase 9: Dateien ─────────────
+
+/** Datei-Anhang an einem Datensatz (SDB, Zertifikat, Foto, Prüfbericht …) */
+model Attachment {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// Art des Datensatzes, z. B. SUBSTANCE, EQUIPMENT, INCIDENT
+  entityType     String
+  entityId       String
+  fileName       String
+  mimeType       String
+  size           Int
+  /// Schlüssel im Speicher (lokal oder S3)
+  storageKey     String       @unique
+  sha256         String
+  uploadedById   String?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, entityType, entityId])
 }

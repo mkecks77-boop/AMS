@@ -5,7 +5,7 @@ Online-Werkzeug für Fachkräfte für Arbeitssicherheit (intern und extern) – 
 
 Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 
-## Stand: Phasen 1–8 umgesetzt
+## Stand: Phasen 1–9 umgesetzt
 
 | Bereich | Umfang |
 |---|---|
@@ -46,6 +46,7 @@ Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 | Fremdfirmen | Firmen mit Haftpflichtnachweis und Sperre, Personen mit Fremdfirmeneinweisung (12 Monate), Einsatzbereitschaft auf einen Blick |
 | Erlaubnisscheine | Heißarbeiten, enge Räume, Absturz, Elektro, Erdarbeiten: Antrag → Genehmigung im Vier-Augen-Prinzip (prüft Sperre, Haftpflicht, Einweisungen) → Freigabe vor Ort mit Checkliste → Abschluss mit Brandwache (≥ 30 min); max. 24 h; Ausdruck |
 | Rechtskataster | Grundbestand von 23 Pflichten (ArbSchG, ASiG, DGUV V1/V2/V3, BetrSichV, GefStoffV, ArbMedVV …), Bewertung mit Nachweis, Erfüllungsgrad, Maßnahmen für Lücken, jährliche Wiedervorlage |
+| Dateien | Anhänge an Gefahrstoffen (SDB), Anlagen, Unfällen, Begehungen (Fotos vom Handy), GBU, Fremdfirmen, Mitarbeitenden (Zertifikate) und Maßnahmen (Nachweise); PDF/Bilder/Word/Excel bis 15 MB mit Inhaltsprüfung; Download nur mit Leserecht im eigenen Unternehmen; Ablage lokal oder S3-kompatibel (EU) |
 | Navigation | Gruppierte Menüs (Ereignisse, Gefährdungen, Betrieb, Personal, Sifa, Verwaltung), „Melden“ immer sichtbar |
 | Dashboard | Überfällige und bald fällige Fristen, gesperrte Anlagen, offene Gefahrstoff-Anträge, BA zur Freigabe, Gefahrstoffe ohne gültige BA, Unterweisungsquote, Quotenlücken, Tage ohne Ausfallunfall, offene Meldungen, überfällige Maßnahmen |
 
@@ -98,6 +99,7 @@ npm test
 1. **Datenbank**: verwaltete PostgreSQL-Instanz in der EU (z. B. bei Hetzner, IONOS, OVH, AWS Frankfurt, Azure Germany). `DATABASE_URL` setzen.
 2. **Anwendung**: Node-Hosting mit `npm ci && npx prisma migrate deploy && npm run build && npm start` (z. B. Docker auf einem EU-Server, Render/Fly.io in Frankfurt, Vercel mit Region fra1). `APP_URL` auf die öffentliche Adresse setzen.
 3. **E-Mail** (optional): `SMTP_URL` und `MAIL_FROM`.
+3a. **Dateien**: bei mehreren Servern oder ohne dauerhaften Datenträger einen S3-kompatiblen Objektspeicher in der EU nutzen (`S3_BUCKET`, `S3_REGION`, ggf. `S3_ENDPOINT`, Zugangsschlüssel); sonst `UPLOAD_DIR` auf ein gesichertes Verzeichnis setzen und ins Backup aufnehmen.
 4. **Täglicher Lauf**: `CRON_SECRET` setzen und täglich `POST /api/cron/digest` mit `Authorization: Bearer <CRON_SECRET>` aufrufen (Fristen-E-Mails, Löschung alter Verbandbucheinträge). Alternativ `npm run notify` per Cron.
 5. **Erstes Konto**: `npm run setup -- --email … --name …`, dann unter *Verwaltung → Plattform* die Kundenunternehmen anlegen.
 6. **Datenschutz**: Auftragsverarbeitungsvertrag (AVV) mit jedem Kundenunternehmen; Backups der Datenbank täglich; Zwei-Faktor-Anmeldung für Admins und Sifa empfehlen.
