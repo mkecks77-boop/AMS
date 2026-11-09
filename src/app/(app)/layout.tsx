@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NavGroup } from "@/components/NavGroup";
 import { requireOrg } from "@/lib/session";
 import { ROLE_LABELS } from "@/lib/roles";
 import { logout, switchOrganization } from "../actions/auth";
@@ -6,21 +7,36 @@ import { logout, switchOrganization } from "../actions/auth";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireOrg();
   const { user, organization, role } = ctx;
-  const nav = [
-    { href: "/", label: "Übersicht", show: true },
-    { href: "/report", label: "Melden", show: ctx.can("incidents.report") },
-    { href: "/deadlines", label: "Fristen", show: ctx.can("deadlines.view") },
-    { href: "/incidents", label: "Unfälle", show: ctx.can("incidents.view") },
-    { href: "/actions", label: "Maßnahmen", show: ctx.can("actions.view") },
-    { href: "/equipment", label: "Anlagen", show: ctx.can("equipment.view") },
-    { href: "/substances", label: "Gefahrstoffe", show: ctx.can("substances.view") },
-    { href: "/instructions", label: "Betriebsanweisungen", show: ctx.can("instructions.view") },
-    { href: "/trainings", label: "Unterweisungen", show: ctx.can("trainings.view") },
-    { href: "/employees", label: "Mitarbeiter", show: ctx.can("masterdata.view") },
-    { href: "/sites", label: "Standorte", show: ctx.can("masterdata.manage") },
-    { href: "/users", label: "Nutzer", show: ctx.can("users.manage") },
-    { href: "/audit", label: "Protokoll", show: ctx.can("audit.view") },
-    { href: "/platform", label: "Plattform", show: user.isPlatformAdmin },
+  const item = (href: string, label: string, show: boolean) => (show ? [{ href, label }] : []);
+  const groups = [
+    { label: "Ereignisse", items: [
+      ...item("/incidents", "Unfälle & Ereignisse", ctx.can("incidents.view")),
+      ...item("/firstaid", "Verbandbuch", ctx.can("firstaid.view")),
+      ...item("/actions", "Maßnahmen", ctx.can("actions.view")),
+    ] },
+    { label: "Gefährdungen", items: [
+      ...item("/risk", "Gefährdungsbeurteilungen", ctx.can("risk.view")),
+      ...item("/walkthroughs", "Begehungen", ctx.can("walkthroughs.view")),
+      ...item("/substances", "Gefahrstoffe", ctx.can("substances.view")),
+      ...item("/instructions", "Betriebsanweisungen", ctx.can("instructions.view")),
+    ] },
+    { label: "Betrieb", items: [
+      ...item("/equipment", "Anlagen & Maschinen", ctx.can("equipment.view")),
+      ...item("/ppe", "PSA", ctx.can("ppe.view")),
+    ] },
+    { label: "Personal", items: [
+      ...item("/trainings", "Unterweisungen", ctx.can("trainings.view")),
+      ...item("/trainings/matrix", "Schulungsmatrix", ctx.can("trainings.view")),
+      ...item("/qualifications", "Qualifikationen", ctx.can("trainings.view")),
+      ...item("/appointments", "Beauftragte", ctx.can("appointments.view")),
+      ...item("/employees", "Mitarbeiter", ctx.can("masterdata.view")),
+    ] },
+    { label: "Verwaltung", items: [
+      ...item("/sites", "Standorte & Abteilungen", ctx.can("masterdata.manage")),
+      ...item("/users", "Nutzer", ctx.can("users.manage")),
+      ...item("/audit", "Protokoll", ctx.can("audit.view")),
+      ...item("/platform", "Plattform", user.isPlatformAdmin),
+    ] },
   ];
   return (
     <div className="min-h-screen">
@@ -43,10 +59,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           ) : (
             <span className="text-sm font-medium">{organization.name}</span>
           )}
-          <nav className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
-            {nav.filter((n) => n.show).map((n) => (
-              <Link key={n.href} href={n.href} className="text-slate-700 hover:text-[var(--brand)]">{n.label}</Link>
-            ))}
+          <nav className="flex flex-wrap items-center gap-1 text-sm">
+            <Link href="/" className="rounded px-2 py-1 text-slate-700 hover:bg-slate-100">Übersicht</Link>
+            {ctx.can("deadlines.view") && <Link href="/deadlines" className="rounded px-2 py-1 text-slate-700 hover:bg-slate-100">Fristen</Link>}
+            {groups.map((g) => <NavGroup key={g.label} label={g.label} items={g.items} />)}
+            {ctx.can("incidents.report") && <Link href="/report" className="ml-1 rounded bg-red-600 px-3 py-1 font-medium text-white hover:bg-red-700">Melden</Link>}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm">
             <span className="text-slate-600">

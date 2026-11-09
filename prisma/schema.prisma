@@ -46,6 +46,11 @@ model Organization {
   incidents          Incident[]
   firstAidEntries    FirstAidEntry[]
   actions            Action[]
+  riskAssessments    RiskAssessment[]
+  checklistTemplates ChecklistTemplate[]
+  walkthroughs       Walkthrough[]
+  ppeItems           PpeItem[]
+  appointments       Appointment[]
   /// Ersthelferquote in Prozent (DGUV V1 § 26: 5 % Verwaltung/Handel, 10 % sonstige Betriebe)
   firstAidRate       Int                    @default(10)
   /// Brandschutzhelferquote in Prozent (ASR A2.2: in der Regel 5 %)
@@ -166,6 +171,9 @@ model Site {
   equipment       Equipment[]
   incidents       Incident[]
   firstAidEntries FirstAidEntry[]
+  riskAssessments RiskAssessment[]
+  walkthroughs   Walkthrough[]
+  appointments   Appointment[]
   substanceUses   SubstanceUse[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -182,6 +190,7 @@ model Department {
   name                 String
   active               Boolean               @default(true)
   employees            Employee[]
+  riskAssessments RiskAssessment[]
   trainingRequirements TrainingRequirement[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
@@ -212,6 +221,9 @@ model Employee {
   incidents            Incident[]
   firstAidEntries      FirstAidEntry[]
   responsibleActions   Action[]
+  riskAssessments      RiskAssessment[]
+  ppeIssues            PpeIssue[]
+  appointments         Appointment[]
   qualifications       Qualification[]
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
@@ -702,9 +714,208 @@ model Action {
   sourceType        String         @default("OTHER")
   incidentId        String?
   incident          Incident?      @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+  riskAssessmentId  String?
+  riskAssessment    RiskAssessment? @relation(fields: [riskAssessmentId], references: [id], onDelete: SetNull)
+  hazardId          String?
+  hazard            Hazard?         @relation(fields: [hazardId], references: [id], onDelete: SetNull)
+  walkthroughId     String?
+  walkthrough       Walkthrough?    @relation(fields: [walkthroughId], references: [id], onDelete: SetNull)
   createdById       String?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
   @@index([organizationId, status, dueDate])
+}
+
+// ───────────── Phase 6: Gefährdungsbeurteilung, Begehungen, PSA, Beauftragte ─────────────
+
+enum RiskAssessmentKind {
+  /// Arbeitsplatz / Tätigkeit
+  GENERAL
+  /// psychische Belastung (§ 5 Abs. 3 Nr. 6 ArbSchG)
+  PSYCHOLOGICAL
+  /// Mutterschutz (§ 10 MuSchG)
+  MATERNITY
+}
+
+enum RiskAssessmentStatus {
+  DRAFT
+  RELEASED
+  ARCHIVED
+}
+
+/// Gefährdungsbeurteilung (§§ 5, 6 ArbSchG)
+model RiskAssessment {
+  id                   String               @id @default(cuid())
+  organizationId       String
+  organization         Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title                String
+  kind                 RiskAssessmentKind   @default(GENERAL)
+  siteId               String?
+  site                 Site?                @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  departmentId         String?
+  department           Department?          @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  /// Arbeitsplatz / Tätigkeit
+  scope                String?
+  participants         String?
+  responsibleId        String?
+  responsible          Employee?            @relation(fields: [responsibleId], references: [id], onDelete: SetNull)
+  reviewIntervalMonths Int                  @default(24)
+  status               RiskAssessmentStatus @default(DRAFT)
+  releasedAt           DateTime?
+  releasedById         String?
+  reviewDue            DateTime?
+  hazards              Hazard[]
+  actions              Action[]
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@index([organizationId, status])
+}
+
+model Hazard {
+  id                  String         @id @default(cuid())
+  assessmentId        String
+  assessment          RiskAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  /// Gefährdungsfaktor nach GDA-Leitlinie, z. B. "1" = mechanische Gefährdungen
+  factor              String
+  description         String
+  probability         Int
+  severity            Int
+  measures            String         @default("")
+  residualProbability Int?
+  residualSeverity    Int?
+  sortOrder           Int            @default(0)
+  actions             Action[]
+  createdAt           DateTime       @default(now())
+}
+
+model ChecklistTemplate {
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  active         Boolean         @default(true)
+  items          ChecklistItem[]
+  walkthroughs   Walkthrough[]
+  createdAt      DateTime        @default(now())
+
+  @@unique([organizationId, title])
+}
+
+model ChecklistItem {
+  id         String            @id @default(cuid())
+  templateId String
+  template   ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  section    String
+  text       String
+  sortOrder  Int               @default(0)
+  answers    WalkthroughAnswer[]
+}
+
+enum WalkthroughStatus {
+  PLANNED
+  DONE
+}
+
+/// Begehung / Audit
+model Walkthrough {
+  id             String              @id @default(cuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  templateId     String
+  template       ChecklistTemplate   @relation(fields: [templateId], references: [id])
+  siteId         String?
+  site           Site?               @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  area           String?
+  plannedAt      DateTime
+  performedAt    DateTime?
+  auditor        String
+  participants   String?
+  summary        String?
+  status         WalkthroughStatus   @default(PLANNED)
+  answers        WalkthroughAnswer[]
+  actions        Action[]
+  createdAt      DateTime            @default(now())
+
+  @@index([organizationId, plannedAt])
+}
+
+enum AnswerResult {
+  OK
+  DEFECT
+  NA
+}
+
+model WalkthroughAnswer {
+  id            String        @id @default(cuid())
+  walkthroughId String
+  walkthrough   Walkthrough   @relation(fields: [walkthroughId], references: [id], onDelete: Cascade)
+  itemId        String
+  item          ChecklistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  result        AnswerResult
+  note          String?
+
+  @@unique([walkthroughId, itemId])
+}
+
+/// PSA-Katalog
+model PpeItem {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  category       String
+  standard       String?
+  /// Austausch nach Monaten (Gebrauchsdauer), null = nach Verschleiß
+  replaceMonths  Int?
+  /// regelmäßige Prüfung erforderlich (z. B. PSA gegen Absturz)
+  inspectionRequired Boolean  @default(false)
+  active         Boolean      @default(true)
+  issues         PpeIssue[]
+
+  @@unique([organizationId, name])
+}
+
+/// PSA-Ausgabe mit Empfangsbestätigung
+model PpeIssue {
+  id         String    @id @default(cuid())
+  itemId     String
+  item       PpeItem   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  size       String?
+  quantity   Int       @default(1)
+  issuedAt   DateTime
+  replaceDue DateTime?
+  returnedAt DateTime?
+  /// Empfang schriftlich bestätigt
+  receiptSigned Boolean @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([employeeId])
+}
+
+/// Beauftragte und Pflichtenübertragungen
+model Appointment {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employeeId     String
+  employee       Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  /// Schlüssel aus APPOINTMENT_ROLES
+  role           String
+  siteId         String?
+  site           Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  /// Aufgabenbereich / übertragene Pflichten
+  scope          String?
+  appointedAt    DateTime
+  validUntil     DateTime?
+  /// schriftliche Bestellung / Pflichtenübertragung unterschrieben
+  signed         Boolean      @default(false)
+  endedAt        DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, role])
 }

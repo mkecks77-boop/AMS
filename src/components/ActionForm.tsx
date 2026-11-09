@@ -8,11 +8,14 @@ export function ActionForm({
   children,
   submitLabel,
   className,
+  buttonClassName,
 }: {
   action: (state: FormState, fd: FormData) => Promise<FormState>;
   children: React.ReactNode;
   submitLabel: string;
   className?: string;
+  /** z. B. "btn-secondary" für Nebenaktionen */
+  buttonClassName?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   return (
@@ -36,7 +39,7 @@ export function ActionForm({
           )}
         </div>
       )}
-      <button type="submit" className="btn" disabled={pending}>
+      <button type="submit" className={buttonClassName ?? "btn"} disabled={pending}>
         {pending ? "Bitte warten …" : submitLabel}
       </button>
     </form>

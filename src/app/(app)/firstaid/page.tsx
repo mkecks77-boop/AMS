@@ -42,7 +42,7 @@ export default async function FirstAidPage() {
                 <td>
                   {e.incident ? <Link href={`/incidents/${e.incident.id}`} className="text-xs text-[var(--brand)] hover:underline">Meldung {e.incident.number}</Link>
                     : ctx.can("incidents.manage") && (
-                      <ActionForm action={convertEntry} submitLabel="→ Unfallmeldung" className="">
+                      <ActionForm action={convertEntry} submitLabel="→ Unfallmeldung" className="" buttonClassName="btn-secondary">
                         <input type="hidden" name="id" value={e.id} />
                       </ActionForm>
                     )}
