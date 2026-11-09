@@ -153,6 +153,53 @@ async function main() {
     }
   }
 
+  // Unterweisungen und Qualifikationen für Muster Metallbau
+  if ((await db.trainingTopic.count({ where: { organizationId: org.id } })) === 0) {
+    const now = new Date();
+    const emps = await db.employee.findMany({ where: { organizationId: org.id }, orderBy: { personnelNumber: "asc" } });
+    const fert = await db.department.findFirst({ where: { organizationId: org.id, name: "Fertigung" } });
+    const general = await db.trainingTopic.create({
+      data: {
+        organizationId: org.id, title: "Allgemeine Arbeitsschutzunterweisung", kind: "INSTRUCTION", intervalMonths: 12, legalBasis: "§ 12 ArbSchG, § 4 DGUV V1",
+        content: "• Verhalten im Brandfall und Fluchtwege\n• Erste Hilfe und Unfallmeldung\n• Verkehrswege und Ordnung\n• Persönliche Schutzausrüstung\n• Meldung von Mängeln",
+        requirements: { create: [{ departmentId: null }] },
+      },
+    });
+    const cncBa = await db.operatingInstruction.findFirst({ where: { organizationId: org.id, title: "CNC-Drehmaschine", status: "RELEASED" } });
+    const cnc = await db.trainingTopic.create({
+      data: {
+        organizationId: org.id, title: "Unterweisung: CNC-Drehmaschine", kind: "INSTRUCTION", intervalMonths: 12, legalBasis: "§ 12 BetrSichV",
+        instructionId: cncBa?.id ?? null, content: "Inhalte gemäß Betriebsanweisung CNC-Drehmaschine",
+        requirements: { create: fert ? [{ departmentId: fert.id }] : [] },
+      },
+    });
+    const s1 = await db.trainingSession.create({ data: { topicId: general.id, date: addMonths(now, -11), trainer: "Erik Extern", location: "Besprechungsraum" } });
+    for (const e of emps) {
+      await db.trainingRecord.create({ data: { topicId: general.id, employeeId: e.id, sessionId: s1.id, completedAt: s1.date, validUntil: addMonths(s1.date, e.apprentice ? 6 : 12) } });
+    }
+    const s2 = await db.trainingSession.create({ data: { topicId: cnc.id, date: addMonths(now, -3), trainer: "Max Meister", location: "Halle 1" } });
+    const dreher = emps.find((e) => e.lastName === "Dreher");
+    if (dreher) await db.trainingRecord.create({ data: { topicId: cnc.id, employeeId: dreher.id, sessionId: s2.id, completedAt: s2.date, validUntil: addMonths(s2.date, 12) } });
+
+    const types = [
+      { name: "Ersthelfer/in", category: "FIRST_AID" as const, validityMonths: 24, legalBasis: "DGUV V1 § 26" },
+      { name: "Brandschutzhelfer/in", category: "FIRE_WARDEN" as const, validityMonths: 36, legalBasis: "ASR A2.2" },
+      { name: "Fahrausweis Flurförderzeuge (Stapler)", category: "OTHER" as const, validityMonths: null, legalBasis: "DGUV V68 § 7" },
+      { name: "Kranführer/in", category: "OTHER" as const, validityMonths: null, legalBasis: "DGUV V52 § 29" },
+    ];
+    const t: Record<string, string> = {};
+    for (const x of types) t[x.name] = (await db.qualificationType.create({ data: { ...x, organizationId: org.id } })).id;
+    const by = (n: string) => emps.find((e) => e.lastName === n)!;
+    await db.qualification.createMany({
+      data: [
+        { typeId: t["Ersthelfer/in"], employeeId: by("Meister").id, acquiredAt: addMonths(now, -23), validUntil: addMonths(now, 1), issuer: "DRK" },
+        { typeId: t["Brandschutzhelfer/in"], employeeId: by("Dreher").id, acquiredAt: addMonths(now, -12), validUntil: addMonths(now, 24) },
+        { typeId: t["Fahrausweis Flurförderzeuge (Stapler)"], employeeId: by("Lager").id, acquiredAt: addMonths(now, -40) },
+        { typeId: t["Kranführer/in"], employeeId: by("Meister").id, acquiredAt: addMonths(now, -60) },
+      ],
+    });
+  }
+
   console.log("Demodaten angelegt. Passwort: Demo-Passwort1");
 }
 

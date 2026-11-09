@@ -41,6 +41,12 @@ model Organization {
   equipment   Equipment[]
   substances  HazardousSubstance[]
   instructions OperatingInstruction[]
+  trainingTopics     TrainingTopic[]
+  qualificationTypes QualificationType[]
+  /// Ersthelferquote in Prozent (DGUV V1 § 26: 5 % Verwaltung/Handel, 10 % sonstige Betriebe)
+  firstAidRate       Int          @default(10)
+  /// Brandschutzhelferquote in Prozent (ASR A2.2: in der Regel 5 %)
+  fireWardenRate     Int          @default(5)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -171,6 +177,7 @@ model Department {
   name           String
   active         Boolean      @default(true)
   employees      Employee[]
+  trainingRequirements TrainingRequirement[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -196,6 +203,8 @@ model Employee {
   exitDate             DateTime?
   active               Boolean      @default(true)
   responsibleEquipment Equipment[]
+  trainingRecords      TrainingRecord[]
+  qualifications       Qualification[]
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
 
@@ -432,9 +441,122 @@ model OperatingInstruction {
   substance          HazardousSubstance? @relation(fields: [substanceId], references: [id], onDelete: SetNull)
   equipmentId        String?
   equipment          Equipment?          @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  trainingTopics     TrainingTopic[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
   @@unique([seriesId, version])
   @@index([organizationId, status])
+}
+
+// ───────────── Phase 4: Schulungen, Unterweisungen, Qualifikationen ─────────────
+
+enum TrainingKind {
+  /// Unterweisung (§ 12 ArbSchG, § 4 DGUV V1)
+  INSTRUCTION
+  /// Schulung / Lehrgang
+  COURSE
+}
+
+model TrainingTopic {
+  id             String                @id @default(cuid())
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  kind           TrainingKind          @default(INSTRUCTION)
+  description    String?
+  /// Unterweisungsinhalt
+  content        String                @default("")
+  legalBasis     String?
+  /// Wiederholung in Monaten, 0 = einmalig
+  intervalMonths Int                   @default(12)
+  /// Erstunterweisung vor Aufnahme der Tätigkeit erforderlich
+  beforeStart    Boolean               @default(true)
+  instructionId  String?
+  instruction    OperatingInstruction? @relation(fields: [instructionId], references: [id], onDelete: SetNull)
+  active         Boolean               @default(true)
+  requirements   TrainingRequirement[]
+  sessions       TrainingSession[]
+  records        TrainingRecord[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([organizationId])
+}
+
+/// Wer braucht das Thema? Abteilung = null bedeutet: alle Beschäftigten
+model TrainingRequirement {
+  id           String        @id @default(cuid())
+  topicId      String
+  topic        TrainingTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  departmentId String?
+  department   Department?   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  /// nur Auszubildende/Jugendliche
+  apprenticesOnly Boolean    @default(false)
+
+  @@unique([topicId, departmentId, apprenticesOnly])
+}
+
+model TrainingSession {
+  id        String           @id @default(cuid())
+  topicId   String
+  topic     TrainingTopic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  date      DateTime
+  trainer   String
+  location  String?
+  notes     String?
+  userId    String?
+  records   TrainingRecord[]
+  createdAt DateTime         @default(now())
+}
+
+model TrainingRecord {
+  id          String           @id @default(cuid())
+  topicId     String
+  topic       TrainingTopic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  employeeId  String
+  employee    Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  sessionId   String?
+  session     TrainingSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  completedAt DateTime
+  /// null = unbegrenzt gültig
+  validUntil  DateTime?
+  createdAt   DateTime         @default(now())
+
+  @@index([employeeId, topicId])
+}
+
+enum QualificationCategory {
+  FIRST_AID
+  FIRE_WARDEN
+  OTHER
+}
+
+model QualificationType {
+  id             String                @id @default(cuid())
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  category       QualificationCategory @default(OTHER)
+  /// Gültigkeit in Monaten, null = unbegrenzt
+  validityMonths Int?
+  legalBasis     String?
+  qualifications Qualification[]
+
+  @@unique([organizationId, name])
+}
+
+model Qualification {
+  id          String            @id @default(cuid())
+  typeId      String
+  type        QualificationType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  employeeId  String
+  employee    Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  acquiredAt  DateTime
+  validUntil  DateTime?
+  issuer      String?
+  notes       String?
+  createdAt   DateTime          @default(now())
+
+  @@index([employeeId])
 }

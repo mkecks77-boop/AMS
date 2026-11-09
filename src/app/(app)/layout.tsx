@@ -12,6 +12,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/equipment", label: "Anlagen", show: ctx.can("equipment.view") },
     { href: "/substances", label: "Gefahrstoffe", show: ctx.can("substances.view") },
     { href: "/instructions", label: "Betriebsanweisungen", show: ctx.can("instructions.view") },
+    { href: "/trainings", label: "Unterweisungen", show: ctx.can("trainings.view") },
     { href: "/employees", label: "Mitarbeiter", show: ctx.can("masterdata.view") },
     { href: "/sites", label: "Standorte", show: ctx.can("masterdata.manage") },
     { href: "/users", label: "Nutzer", show: ctx.can("users.manage") },
@@ -39,7 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           ) : (
             <span className="text-sm font-medium">{organization.name}</span>
           )}
-          <nav className="flex gap-3 text-sm">
+          <nav className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
             {nav.filter((n) => n.show).map((n) => (
               <Link key={n.href} href={n.href} className="text-slate-700 hover:text-[var(--brand)]">{n.label}</Link>
             ))}

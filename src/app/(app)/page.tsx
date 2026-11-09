@@ -4,12 +4,12 @@ import { db } from "@/lib/db";
 import { formatDate } from "@/lib/dates";
 import { countByStatus, getDeadlines } from "@/lib/deadlines";
 import { requireOrg } from "@/lib/session";
+import { getMatrix, quotaReport } from "@/lib/trainings";
 
 export const metadata = { title: "Übersicht" };
 
 const PLANNED = [
   "Arbeitsunfälle & Verbandbuch",
-  "Schulungen & Qualifikationen",
   "Gefährdungsbeurteilungen",
   "Maßnahmen",
 ];
@@ -21,6 +21,9 @@ export default async function Dashboard() {
   const in90 = new Date();
   in90.setUTCDate(in90.getUTCDate() + 90);
 
+  const matrix = ctx.can("trainings.view") ? await getMatrix(orgId) : null;
+  const quota = ctx.can("trainings.view") ? await quotaReport(orgId) : [];
+  const quotaGaps = quota.filter((q) => q.firstAid < q.firstAidRequired || q.fireWarden < q.fireWardenRequired).length;
   const [requested, baInReview, missingBa, members, equipmentCount, locked, deadlines] = await Promise.all([
     ctx.can("substances.approve") ? db.hazardousSubstance.count({ where: { organizationId: orgId, status: "REQUESTED" } }) : 0,
     ctx.can("instructions.release") ? db.operatingInstruction.count({ where: { organizationId: orgId, status: "IN_REVIEW" } }) : 0,
@@ -43,6 +46,8 @@ export default async function Dashboard() {
     { label: "Gefahrstoff-Anträge", value: requested, href: "/substances?status=REQUESTED", alert: requested > 0, show: ctx.can("substances.approve") },
     { label: "BA zur Freigabe", value: baInReview, href: "/instructions?status=IN_REVIEW", show: ctx.can("instructions.release") },
     { label: "Gefahrstoffe ohne gültige BA", value: missingBa, href: "/substances", alert: missingBa > 0, show: ctx.can("instructions.edit") },
+    { label: "Unterweisungsquote", value: matrix ? `${matrix.rate} %` : "–", href: "/trainings/matrix", alert: !!matrix && matrix.rate < 90, show: !!matrix },
+    { label: "Standorte mit Quotenlücke (EH/BSH)", value: quotaGaps, href: "/qualifications", alert: quotaGaps > 0, show: !!matrix },
     { label: "Aktive Nutzer", value: members, href: "/users", show: ctx.can("users.manage") },
   ].filter((t) => t.show);
 

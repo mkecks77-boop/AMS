@@ -5,7 +5,7 @@ Online-Werkzeug für Fachkräfte für Arbeitssicherheit (intern und extern) – 
 
 Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 
-## Stand: Phase 1–3
+## Stand: Phase 1–4
 
 | Bereich | Umfang |
 |---|---|
@@ -25,7 +25,10 @@ Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 | Gefahrstoff-Freigabe | Antrag → Prüfung durch die Sifa (Substitutionsprüfung und SDB-Datum Pflicht) → Freigabe oder begründete Ablehnung; SDB-Wiedervorlage im Fristenkalender |
 | Betriebsanweisungen | Für Gefahrstoffe, Maschinen, Tätigkeiten, Biostoffe und PSA; Standardlayout mit farbigen Balken und Piktogrammen (GHS, ISO 7010); Entwurf wird bei Gefahrstoff-Freigabe automatisch aus den SDB-Daten erzeugt |
 | BA-Freigabe | Entwurf → zur Freigabe → Freigabe im Vier-Augen-Prinzip; Versionierung (alte Version wird archiviert); Überprüfung nach 24 Monaten im Fristenkalender; Druckansicht / PDF |
-| Dashboard | Überfällige und bald fällige Fristen, gesperrte Anlagen, offene Gefahrstoff-Anträge, BA zur Freigabe, Gefahrstoffe ohne gültige BA |
+| Unterweisungen & Schulungen | Themen mit Intervall und Zielgruppe (Abteilungen, alle, nur Azubis), Erfassung durchgeführter Unterweisungen mit Teilnehmenden, Azubis automatisch halbjährlich (JArbSchG § 29), Unterweisung direkt aus einer Betriebsanweisung, druckbarer Unterweisungsnachweis mit Unterschriftenliste |
+| Schulungsmatrix | Beschäftigte × Pflichtthemen mit Ampel und Erfüllungsquote, Filter nach Standort/Abteilung |
+| Qualifikationen | Ersthelfer, Brandschutzhelfer, Staplerschein, Kran, EuP … mit Ablaufdatum; Quote je Standort (DGUV V1 § 26, ASR A2.2) |
+| Dashboard | Überfällige und bald fällige Fristen, gesperrte Anlagen, offene Gefahrstoff-Anträge, BA zur Freigabe, Gefahrstoffe ohne gültige BA, Unterweisungsquote, Quotenlücken |
 
 E-Mail-Versand folgt später – bis dahin wird der Einladungslink angezeigt und vom Admin weitergegeben.
 

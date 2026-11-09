@@ -28,7 +28,9 @@ export type Permission =
   | "substances.approve"
   | "instructions.view"
   | "instructions.edit"
-  | "instructions.release";
+  | "instructions.release"
+  | "trainings.view"
+  | "trainings.manage";
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ORG_ADMIN: [
@@ -36,17 +38,20 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "equipment.view", "equipment.manage", "inspections.record", "deadlines.view",
     "substances.view", "substances.edit", "substances.approve",
     "instructions.view", "instructions.edit", "instructions.release",
+    "trainings.view", "trainings.manage",
   ],
   SAFETY_OFFICER: [
     "audit.view", "dashboard.view", "masterdata.manage", "masterdata.view",
     "equipment.view", "equipment.manage", "inspections.record", "deadlines.view",
     "substances.view", "substances.edit", "substances.approve",
     "instructions.view", "instructions.edit", "instructions.release",
+    "trainings.view", "trainings.manage",
   ],
   MANAGER: [
     "dashboard.view", "masterdata.view", "equipment.view", "equipment.manage",
     "inspections.record", "deadlines.view",
     "substances.view", "substances.edit", "instructions.view", "instructions.edit", "instructions.release",
+    "trainings.view", "trainings.manage",
   ],
   INSPECTOR: ["dashboard.view", "equipment.view", "inspections.record", "deadlines.view", "substances.view", "instructions.view"],
   EMPLOYEE: ["dashboard.view", "equipment.view", "substances.view", "instructions.view"],
