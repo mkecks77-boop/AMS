@@ -70,4 +70,5 @@ zusätzlich geplant: PostgreSQL Row-Level Security.
 - ~~Arbeitsmedizinische Vorsorge, Fremdfirmen & Erlaubnisscheine, Rechtskataster~~ ✅ Phase 8
 - ~~Brandschutz & Notfall (Räumungsübungen, Alarmplan)~~ ✅ Phase 10
 - ~~Datei-Uploads (SDB, Zertifikate, Fotos)~~ ✅ Phase 9
-- Microsoft-Login (SSO) je Unternehmen, PostgreSQL Row-Level Security als zusätzliche Mandantentrennung
+- ~~Microsoft-Login (SSO) je Unternehmen~~ ✅ Phase 11
+- PostgreSQL Row-Level Security als zusätzliche Mandantentrennung

@@ -44,6 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { label: "Verwaltung", items: [
       ...item("/sites", "Standorte & Abteilungen", ctx.can("masterdata.manage")),
       ...item("/users", "Nutzer", ctx.can("users.manage")),
+      ...item("/sso", "Single Sign-on", ctx.can("users.manage")),
       ...item("/audit", "Protokoll", ctx.can("audit.view")),
       ...item("/platform", "Plattform", user.isPlatformAdmin),
     ] },

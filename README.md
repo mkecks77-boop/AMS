@@ -5,12 +5,13 @@ Online-Werkzeug für Fachkräfte für Arbeitssicherheit (intern und extern) – 
 
 Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 
-## Stand: Phasen 1–10 umgesetzt
+## Stand: Phasen 1–11 umgesetzt
 
 | Bereich | Umfang |
 |---|---|
 | Mandanten | Unternehmen anlegen, sperren/aktivieren (Plattform-Betreiber); Daten strikt je Unternehmen |
-| Anmeldung | E-Mail + Passwort (bcrypt), Sitzungs-Cookie (nur Hash in der DB), 14 Tage gültig |
+| Anmeldung | E-Mail + Passwort (bcrypt), Sitzungs-Cookie (nur Hash in der DB), 14 Tage gültig; optional Zwei-Faktor (TOTP) oder Single Sign-on |
+| Single Sign-on | Je Unternehmen per OpenID Connect (Microsoft Entra ID, Google, Keycloak …): Zuordnung über E-Mail-Domain, PKCE + state + nonce, Signaturprüfung über JWKS, Client-Secret AES-256-GCM-verschlüsselt, optional automatisches Anlegen neuer Mitarbeitender und Sperre der Passwort-Anmeldung |
 | Unternehmens-Umschalter | Externe Sifa wechselt zwischen betreuten Unternehmen |
 | Rollen | Unternehmens-Admin · Fachkraft für Arbeitssicherheit · Führungskraft · Prüfer/in · Mitarbeiter/in; Kennzeichen „extern“ |
 | Nutzerverwaltung | Einladen per Link (7 Tage), bestehende Konten werden direkt hinzugefügt, Rolle ändern, deaktivieren, Passwort-Link (24 h) |
@@ -101,6 +102,7 @@ npm test
 2. **Anwendung**: Node-Hosting mit `npm ci && npx prisma migrate deploy && npm run build && npm start` (z. B. Docker auf einem EU-Server, Render/Fly.io in Frankfurt, Vercel mit Region fra1). `APP_URL` auf die öffentliche Adresse setzen.
 3. **E-Mail** (optional): `SMTP_URL` und `MAIL_FROM`.
 3a. **Dateien**: bei mehreren Servern oder ohne dauerhaften Datenträger einen S3-kompatiblen Objektspeicher in der EU nutzen (`S3_BUCKET`, `S3_REGION`, ggf. `S3_ENDPOINT`, Zugangsschlüssel); sonst `UPLOAD_DIR` auf ein gesichertes Verzeichnis setzen und ins Backup aufnehmen.
+3b. **Single Sign-on** (optional): `SSO_SECRET_KEY` (32 Byte, Base64) setzen; Konfiguration je Unternehmen unter *Verwaltung → Single Sign-on*.
 4. **Täglicher Lauf**: `CRON_SECRET` setzen und täglich `POST /api/cron/digest` mit `Authorization: Bearer <CRON_SECRET>` aufrufen (Fristen-E-Mails, Löschung alter Verbandbucheinträge). Alternativ `npm run notify` per Cron.
 5. **Erstes Konto**: `npm run setup -- --email … --name …`, dann unter *Verwaltung → Plattform* die Kundenunternehmen anlegen.
 6. **Datenschutz**: Auftragsverarbeitungsvertrag (AVV) mit jedem Kundenunternehmen; Backups der Datenbank täglich; Zwei-Faktor-Anmeldung für Admins und Sifa empfehlen.

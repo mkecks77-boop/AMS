@@ -60,6 +60,7 @@ model Organization {
   attachments        Attachment[]
   emergencyPlans     EmergencyPlan[]
   drills             Drill[]
+  ssoConfig          SsoConfig?
   /// Soll-Einsatzzeit der Sifa in Stunden pro Jahr (DGUV Vorschrift 2)
   sifaHoursTarget    Int?
   /// Ersthelferquote in Prozent (DGUV V1 § 26: 5 % Verwaltung/Handel, 10 % sonstige Betriebe)
@@ -1259,4 +1260,37 @@ model Drill {
   createdAt         DateTime     @default(now())
 
   @@index([organizationId, plannedAt])
+}
+
+// ───────────── Phase 11: Single Sign-on (OpenID Connect) ─────────────
+
+/// SSO-Konfiguration je Unternehmen (z. B. Microsoft Entra ID, Google Workspace, Keycloak)
+model SsoConfig {
+  id                 String       @id @default(cuid())
+  organizationId     String       @unique
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// z. B. https://login.microsoftonline.com/<Tenant-ID>/v2.0
+  issuer             String
+  clientId           String
+  /// AES-256-GCM verschlüsselt (Schlüssel: SSO_SECRET_KEY)
+  clientSecretEnc    String
+  /// E-Mail-Domains, die zu diesem Unternehmen gehören (klein geschrieben)
+  emailDomains       String[]
+  /// neue Personen beim ersten Login automatisch als Mitarbeiter/in anlegen
+  autoProvision      Boolean      @default(false)
+  /// Passwort-Anmeldung für diese Domains sperren (nur noch SSO)
+  enforce            Boolean      @default(false)
+  enabled            Boolean      @default(true)
+  updatedAt          DateTime     @updatedAt
+}
+
+/// kurzlebiger Zustand einer laufenden SSO-Anmeldung (state, nonce, PKCE)
+model SsoState {
+  id           String   @id @default(cuid())
+  stateHash    String   @unique
+  configId     String
+  nonce        String
+  codeVerifier String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
 }

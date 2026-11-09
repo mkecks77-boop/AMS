@@ -102,6 +102,9 @@ const LABELS: Record<string, string> = {
   "emergency.plan_saved": "Alarmplan gespeichert",
   "emergency.drill_planned": "Notfallübung geplant",
   "emergency.drill_done": "Notfallübung ausgewertet",
+  "sso.configured": "Single Sign-on konfiguriert",
+  "sso.provisioned": "Konto per SSO angelegt",
+  "login.sso": "Anmeldung per SSO",
 };
 
 export default async function AuditPage() {

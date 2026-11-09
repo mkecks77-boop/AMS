@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { verifyPassword } from "@/lib/password";
 import { verifyTotp } from "@/lib/totp";
+import { passwordLoginBlocked, startSso } from "@/lib/sso";
 import { createSession, destroySession, requireUser } from "@/lib/session";
 import { acceptInvitation, normalizeEmail, resetPassword, UserError } from "@/lib/users";
 import { str, type FormState } from "@/lib/form";
@@ -23,6 +24,9 @@ export async function login(_: FormState, fd: FormData): Promise<FormState> {
       },
     },
   });
+  if (user && !user.isPlatformAdmin && (await passwordLoginBlocked(email))) {
+    return { error: "Für Ihr Unternehmen ist die Anmeldung mit dem Unternehmenskonto vorgeschrieben. Bitte „Mit Unternehmenskonto anmelden“ verwenden." };
+  }
   if (!user?.passwordHash || !user.active || !(await verifyPassword(password, user.passwordHash))) {
     return { error: GENERIC };
   }
@@ -78,4 +82,15 @@ export async function setNewPassword(_: FormState, fd: FormData): Promise<FormSt
     throw e;
   }
   redirect("/login?reset=1");
+}
+
+export async function ssoLogin(_: FormState, fd: FormData): Promise<FormState> {
+  let url = "";
+  try {
+    url = await startSso(str(fd, "email"));
+  } catch (e) {
+    if (e instanceof UserError) return { error: e.message };
+    throw e;
+  }
+  redirect(url);
 }
