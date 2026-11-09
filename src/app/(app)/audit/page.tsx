@@ -47,6 +47,13 @@ const LABELS: Record<string, string> = {
   "qualification.removed": "Qualifikation entfernt",
   "qualification_type.created": "Qualifikationsart angelegt",
   "organization.rates": "Quoten geändert",
+  "incident.reported": "Ereignis gemeldet",
+  "incident.updated": "Meldung bearbeitet",
+  "firstaid.created": "Verbandbucheintrag",
+  "firstaid.purged": "Verbandbuch bereinigt (5 Jahre)",
+  "action.created": "Maßnahme angelegt",
+  "action.updated": "Maßnahme geändert",
+  "action.status": "Maßnahmenstatus geändert",
 };
 
 export default async function AuditPage() {

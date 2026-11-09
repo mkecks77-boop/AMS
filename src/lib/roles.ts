@@ -30,7 +30,15 @@ export type Permission =
   | "instructions.edit"
   | "instructions.release"
   | "trainings.view"
-  | "trainings.manage";
+  | "trainings.manage"
+  /** Unfall/Beinaheunfall melden, Verbandbucheintrag – alle */
+  | "incidents.report"
+  | "incidents.view"
+  | "incidents.manage"
+  /** Verbandbuch einsehen (Gesundheitsdaten) */
+  | "firstaid.view"
+  | "actions.view"
+  | "actions.manage";
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ORG_ADMIN: [
@@ -39,6 +47,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "substances.view", "substances.edit", "substances.approve",
     "instructions.view", "instructions.edit", "instructions.release",
     "trainings.view", "trainings.manage",
+    "incidents.report", "incidents.view", "incidents.manage", "firstaid.view", "actions.view", "actions.manage",
   ],
   SAFETY_OFFICER: [
     "audit.view", "dashboard.view", "masterdata.manage", "masterdata.view",
@@ -46,15 +55,17 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "substances.view", "substances.edit", "substances.approve",
     "instructions.view", "instructions.edit", "instructions.release",
     "trainings.view", "trainings.manage",
+    "incidents.report", "incidents.view", "incidents.manage", "firstaid.view", "actions.view", "actions.manage",
   ],
   MANAGER: [
     "dashboard.view", "masterdata.view", "equipment.view", "equipment.manage",
     "inspections.record", "deadlines.view",
     "substances.view", "substances.edit", "instructions.view", "instructions.edit", "instructions.release",
     "trainings.view", "trainings.manage",
+    "incidents.report", "incidents.view", "incidents.manage", "actions.view", "actions.manage",
   ],
-  INSPECTOR: ["dashboard.view", "equipment.view", "inspections.record", "deadlines.view", "substances.view", "instructions.view"],
-  EMPLOYEE: ["dashboard.view", "equipment.view", "substances.view", "instructions.view"],
+  INSPECTOR: ["dashboard.view", "equipment.view", "inspections.record", "deadlines.view", "substances.view", "instructions.view", "incidents.report", "actions.view"],
+  EMPLOYEE: ["dashboard.view", "equipment.view", "substances.view", "instructions.view", "incidents.report"],
 };
 
 export interface AccessContext {

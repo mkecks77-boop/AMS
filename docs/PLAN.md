@@ -54,7 +54,7 @@ zusätzlich geplant: PostgreSQL Row-Level Security.
 | 2 | Standorte/Abteilungen, Mitarbeiterstamm (auch ohne Login), Anlagen, Prüfpflichten, Fristenkalender | ✅ |
 | 3 | Gefahrstoffverzeichnis, Betriebsanweisungs-Editor | ✅ |
 | 4 | Schulungen, Qualifikationen, Unterweisungen | ✅ |
-| 5 | Unfälle, Verbandbuch, Unfallanzeige, Maßnahmen | |
+| 5 | Unfälle, Verbandbuch, Unfallanzeige, Maßnahmen | ✅ |
 | 6 | Gefährdungsbeurteilung, Begehungen, PSA, Beauftragte | |
 | 7 | ASA-Sitzungen, Tätigkeitsnachweis, Jahresbericht, E-Mail, 2FA, KI-Assistent | |
 
