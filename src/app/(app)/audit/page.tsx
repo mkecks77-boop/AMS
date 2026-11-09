@@ -99,6 +99,9 @@ const LABELS: Record<string, string> = {
   "legal.evaluated": "Rechtsanforderung bewertet",
   "file.uploaded": "Datei hochgeladen",
   "file.deleted": "Datei gelöscht",
+  "emergency.plan_saved": "Alarmplan gespeichert",
+  "emergency.drill_planned": "Notfallübung geplant",
+  "emergency.drill_done": "Notfallübung ausgewertet",
 };
 
 export default async function AuditPage() {

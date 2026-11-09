@@ -58,6 +58,8 @@ model Organization {
   permits            Permit[]
   legalRequirements  LegalRequirement[]
   attachments        Attachment[]
+  emergencyPlans     EmergencyPlan[]
+  drills             Drill[]
   /// Soll-Einsatzzeit der Sifa in Stunden pro Jahr (DGUV Vorschrift 2)
   sifaHoursTarget    Int?
   /// Ersthelferquote in Prozent (DGUV V1 § 26: 5 % Verwaltung/Handel, 10 % sonstige Betriebe)
@@ -190,6 +192,8 @@ model Site {
   walkthroughs   Walkthrough[]
   appointments   Appointment[]
   permits        Permit[]
+  emergencyPlan  EmergencyPlan?
+  drills         Drill[]
   substanceUses   SubstanceUse[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -743,6 +747,8 @@ model Action {
   asaMeeting        AsaMeeting?     @relation(fields: [asaMeetingId], references: [id], onDelete: SetNull)
   legalRequirementId String?
   legalRequirement   LegalRequirement? @relation(fields: [legalRequirementId], references: [id], onDelete: SetNull)
+  drillId            String?
+  drill              Drill?          @relation(fields: [drillId], references: [id], onDelete: SetNull)
   createdById       String?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
@@ -1196,4 +1202,61 @@ model Attachment {
   createdAt      DateTime     @default(now())
 
   @@index([organizationId, entityType, entityId])
+}
+
+// ───────────── Phase 10: Brandschutz und Notfall ─────────────
+
+/// Alarmplan / Notfallorganisation je Standort (Aushang)
+model EmergencyPlan {
+  id               String       @id @default(cuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  siteId           String       @unique
+  site             Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  /// interne Notrufnummer (z. B. Pforte)
+  internalEmergency String?
+  fireBrigade      String       @default("112")
+  poisonCenter     String?
+  doctorOnDuty     String?
+  /// Durchgangsarzt / D-Arzt
+  dArzt            String?
+  assemblyPoint    String
+  evacuationHelpers String?
+  firstAidRooms    String?
+  aedLocations     String?
+  alarmSignal      String?
+  notes            String?
+  reviewedAt       DateTime     @default(now())
+  reviewDue        DateTime
+  updatedAt        DateTime     @updatedAt
+}
+
+enum DrillKind {
+  EVACUATION
+  FIRE
+  FIRST_AID
+  OTHER
+}
+
+/// Räumungs-, Brandschutz- oder Erste-Hilfe-Übung (ASR A2.3)
+model Drill {
+  id                String       @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  siteId            String
+  site              Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  kind              DrillKind    @default(EVACUATION)
+  plannedAt         DateTime
+  performedAt       DateTime?
+  scenario          String?
+  /// angekündigt oder unangekündigt
+  announced         Boolean      @default(true)
+  participants      Int?
+  /// Zeit bis zur vollständigen Räumung in Minuten
+  evacuationMinutes Int?
+  observations      String?
+  actions           Action[]
+  createdAt         DateTime     @default(now())
+
+  @@index([organizationId, plannedAt])
 }
