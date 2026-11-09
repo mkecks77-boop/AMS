@@ -8,6 +8,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { user, organization, role } = ctx;
   const nav = [
     { href: "/", label: "Übersicht", show: true },
+    { href: "/deadlines", label: "Fristen", show: ctx.can("deadlines.view") },
+    { href: "/equipment", label: "Anlagen", show: ctx.can("equipment.view") },
+    { href: "/employees", label: "Mitarbeiter", show: ctx.can("masterdata.view") },
+    { href: "/sites", label: "Standorte", show: ctx.can("masterdata.manage") },
     { href: "/users", label: "Nutzer", show: ctx.can("users.manage") },
     { href: "/audit", label: "Protokoll", show: ctx.can("audit.view") },
     { href: "/platform", label: "Plattform", show: user.isPlatformAdmin },

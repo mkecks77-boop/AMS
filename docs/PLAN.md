@@ -51,7 +51,7 @@ zusätzlich geplant: PostgreSQL Row-Level Security.
 | Phase | Inhalt | Status |
 |---|---|---|
 | 1 | Grundgerüst, Login, Mandanten, Rollen, Nutzerverwaltung, Umschalter, Protokoll | ✅ |
-| 2 | Standorte/Abteilungen, Mitarbeiterstamm (auch ohne Login), Anlagen, Prüfpflichten, Fristenkalender | |
+| 2 | Standorte/Abteilungen, Mitarbeiterstamm (auch ohne Login), Anlagen, Prüfpflichten, Fristenkalender | ✅ |
 | 3 | Gefahrstoffverzeichnis, Betriebsanweisungs-Editor | |
 | 4 | Schulungen, Qualifikationen, Unterweisungen | |
 | 5 | Unfälle, Verbandbuch, Unfallanzeige, Maßnahmen | |

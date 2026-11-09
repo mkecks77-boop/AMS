@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { resetDb } from "./helpers";
 import { db } from "@/lib/db";
 import {
   acceptInvitation,
@@ -13,17 +14,7 @@ import { verifyPassword } from "@/lib/password";
 
 const PW = "Sicheres-Passwort1";
 
-async function reset() {
-  await db.$transaction([
-    db.auditLog.deleteMany(),
-    db.passwordReset.deleteMany(),
-    db.session.deleteMany(),
-    db.invitation.deleteMany(),
-    db.membership.deleteMany(),
-    db.user.deleteMany(),
-    db.organization.deleteMany(),
-  ]);
-}
+const reset = resetDb;
 
 async function setup() {
   const platform = await db.user.create({

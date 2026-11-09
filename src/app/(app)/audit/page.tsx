@@ -13,6 +13,18 @@ const LABELS: Record<string, string> = {
   "organization.created": "Unternehmen angelegt",
   "organization.activated": "Unternehmen aktiviert",
   "organization.deactivated": "Unternehmen deaktiviert",
+  "site.created": "Standort angelegt",
+  "site.updated": "Standort geändert",
+  "department.created": "Abteilung angelegt",
+  "department.updated": "Abteilung geändert",
+  "employee.created": "Mitarbeiter/in angelegt",
+  "employee.updated": "Mitarbeiter/in geändert",
+  "equipment.created": "Anlage angelegt",
+  "equipment.updated": "Anlage geändert",
+  "equipment.status_changed": "Anlagenstatus geändert",
+  "obligation.created": "Prüfpflicht angelegt",
+  "obligation.updated": "Prüfpflicht geändert",
+  "inspection.recorded": "Prüfung erfasst",
 };
 
 export default async function AuditPage() {
