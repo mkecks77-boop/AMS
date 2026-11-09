@@ -39,6 +39,8 @@ model Organization {
   departments Department[]
   employees   Employee[]
   equipment   Equipment[]
+  substances  HazardousSubstance[]
+  instructions OperatingInstruction[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -153,6 +155,7 @@ model Site {
   departments    Department[]
   employees      Employee[]
   equipment      Equipment[]
+  substanceUses  SubstanceUse[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -233,6 +236,7 @@ model Equipment {
   notes               String?
   obligations         InspectionObligation[]
   statusChanges       EquipmentStatusChange[]
+  instructions        OperatingInstruction[]
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 
@@ -302,4 +306,135 @@ model Inspection {
   nextDueAt     DateTime
   userId        String?
   createdAt     DateTime             @default(now())
+}
+
+// ───────────── Phase 3: Gefahrstoffe und Betriebsanweisungen ─────────────
+
+enum SubstanceStatus {
+  /// beantragt, Prüfung durch die Sifa ausstehend
+  REQUESTED
+  APPROVED
+  REJECTED
+  /// nicht mehr im Einsatz (bleibt im Verzeichnis dokumentiert)
+  PHASED_OUT
+}
+
+enum SignalWord {
+  DANGER
+  WARNING
+  NONE
+}
+
+/// Gefahrstoffverzeichnis nach § 6 Abs. 12 GefStoffV
+model HazardousSubstance {
+  id                  String          @id @default(cuid())
+  organizationId      String
+  organization        Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// Handelsname / Produktbezeichnung
+  name                String
+  manufacturer        String?
+  casNumber           String?
+  /// Verwendungszweck / Tätigkeit
+  usage               String?
+  /// GHS01 … GHS09
+  pictograms          String[]
+  signalWord          SignalWord      @default(NONE)
+  hStatements         String[]
+  pStatements         String[]
+  /// Lagerklasse nach TRGS 510, z. B. "3", "6.1A", "8B"
+  storageClass        String?
+  /// Wassergefährdungsklasse: "1", "2", "3", "nwg"
+  waterHazardClass    String?
+  /// Datum des Sicherheitsdatenblatts
+  sdsDate             DateTime?
+  /// nächste Überprüfung auf Aktualität des SDB
+  sdsReviewDue        DateTime?
+  ppe                 String?
+  substitutionChecked Boolean         @default(false)
+  substitutionNotes   String?
+  status              SubstanceStatus @default(REQUESTED)
+  requestedById       String?
+  decidedById         String?
+  decidedAt           DateTime?
+  decisionNote        String?
+  uses                SubstanceUse[]
+  instructions        OperatingInstruction[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@index([organizationId, status])
+}
+
+/// Einsatzort und Menge eines Gefahrstoffs
+model SubstanceUse {
+  id          String             @id @default(cuid())
+  substanceId String
+  substance   HazardousSubstance @relation(fields: [substanceId], references: [id], onDelete: Cascade)
+  siteId      String?
+  site        Site?              @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  workArea    String
+  /// maximale Menge vor Ort
+  quantity    Float?
+  unit        String?
+  createdAt   DateTime           @default(now())
+}
+
+enum InstructionType {
+  /// Gefahrstoff (§ 14 GefStoffV, TRGS 555)
+  HAZARDOUS_SUBSTANCE
+  /// Maschine / Arbeitsmittel (§ 12 BetrSichV)
+  MACHINE
+  /// Tätigkeit / Arbeitsverfahren
+  ACTIVITY
+  /// Biostoffe (§ 14 BioStoffV)
+  BIOLOGICAL
+  /// Persönliche Schutzausrüstung (PSA-BV)
+  PPE
+}
+
+enum InstructionStatus {
+  DRAFT
+  /// zur Freigabe vorgelegt
+  IN_REVIEW
+  RELEASED
+  /// durch neuere Version abgelöst oder zurückgezogen
+  ARCHIVED
+}
+
+/// Betriebsanweisung. Jede Version ist ein eigener Datensatz; seriesId verbindet die Versionen.
+model OperatingInstruction {
+  id                 String              @id @default(cuid())
+  organizationId     String
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  seriesId           String
+  version            Int                 @default(1)
+  type               InstructionType
+  title              String
+  /// Geltungsbereich: Arbeitsplatz, Tätigkeit, Arbeitsbereich
+  scope              String?
+  hazards            String              @default("")
+  protectiveMeasures String              @default("")
+  malfunctions       String              @default("")
+  firstAid           String              @default("")
+  maintenance        String              @default("")
+  /// GHS- und ISO-7010-Codes, z. B. GHS02, M004, W001, P003, E003
+  pictograms         String[]
+  emergencyPhone     String?
+  /// Aushangorte
+  postings           String?
+  status             InstructionStatus   @default(DRAFT)
+  authorId           String?
+  lastEditorId       String?
+  releasedById       String?
+  releasedAt         DateTime?
+  reviewDue          DateTime?
+  substanceId        String?
+  substance          HazardousSubstance? @relation(fields: [substanceId], references: [id], onDelete: SetNull)
+  equipmentId        String?
+  equipment          Equipment?          @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@unique([seriesId, version])
+  @@index([organizationId, status])
 }

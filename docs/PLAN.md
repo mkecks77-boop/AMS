@@ -52,8 +52,15 @@ zusätzlich geplant: PostgreSQL Row-Level Security.
 |---|---|---|
 | 1 | Grundgerüst, Login, Mandanten, Rollen, Nutzerverwaltung, Umschalter, Protokoll | ✅ |
 | 2 | Standorte/Abteilungen, Mitarbeiterstamm (auch ohne Login), Anlagen, Prüfpflichten, Fristenkalender | ✅ |
-| 3 | Gefahrstoffverzeichnis, Betriebsanweisungs-Editor | |
+| 3 | Gefahrstoffverzeichnis, Betriebsanweisungs-Editor | ✅ |
 | 4 | Schulungen, Qualifikationen, Unterweisungen | |
 | 5 | Unfälle, Verbandbuch, Unfallanzeige, Maßnahmen | |
 | 6 | Gefährdungsbeurteilung, Begehungen, PSA, Beauftragte | |
 | 7 | ASA-Sitzungen, Tätigkeitsnachweis, Jahresbericht, E-Mail, 2FA, KI-Assistent | |
+
+## Offene Punkte aus Phase 3 (für später)
+- Originalgrafiken der GHS- und ISO-7010-Zeichen als Bilddateien (derzeit genormte Form/Farbe mit Code)
+- SDB als Datei hochladen (mit Phase „Dokumente/Dateiablage“)
+- QR-Code an der Maschine, der die aktuelle BA öffnet
+- Prüfung der Zusammenlagerung nach TRGS 510
+- Unterweisung direkt aus einer BA erzeugen (Phase 4)

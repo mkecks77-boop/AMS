@@ -1,6 +1,8 @@
 /** Demodaten zum Ausprobieren. Passwort für alle: Demo-Passwort1 */
 import { PrismaClient, type InspectorType, type Role } from "@prisma/client";
 import { addMonths } from "../src/lib/dates";
+import { draftFromSubstance } from "../src/lib/instructions";
+import { createId } from "../src/lib/id";
 import { hashPassword } from "../src/lib/password";
 
 const db = new PrismaClient();
@@ -85,6 +87,69 @@ async function main() {
           data: { organizationId: org.id, equipmentId: eq.id, title, intervalMonths, inspectorType, nextDueAt, lastInspectedAt: addMonths(nextDueAt, -intervalMonths) },
         });
       }
+    }
+  }
+
+  // Gefahrstoffe und Betriebsanweisungen für Muster Metallbau
+  if ((await db.hazardousSubstance.count({ where: { organizationId: org.id } })) === 0) {
+    const sifa = await db.user.findUniqueOrThrow({ where: { email: "sifa@example.com" } });
+    const admin = await db.user.findUniqueOrThrow({ where: { email: "admin@metallbau.example.com" } });
+    const werk = await db.site.findFirstOrThrow({ where: { organizationId: org.id, name: "Werk Nord" } });
+    const now = new Date();
+    const substances = [
+      {
+        name: "Aceton technisch", manufacturer: "Chemiehandel Muster GmbH", casNumber: "67-64-1", usage: "Reinigen und Entfetten von Metallteilen",
+        pictograms: ["GHS02", "GHS07"], signalWord: "DANGER" as const, hStatements: ["H225", "H319", "H336", "EUH066"],
+        pStatements: ["P210", "P233", "P240", "P280", "P305_P351_P338", "P403_P233", "P501"], storageClass: "3", waterHazardClass: "1",
+        sdsDate: addMonths(now, -8), sdsReviewDue: addMonths(now, 4), ppe: "Nitrilhandschuhe (0,4 mm), Schutzbrille",
+        substitutionChecked: true, substitutionNotes: "Wässriger Reiniger geprüft, Reinigungswirkung bei Harzrückständen unzureichend.",
+        status: "APPROVED" as const, use: ["Teilereinigung Halle 1", 20, "l"] as const, release: true,
+      },
+      {
+        name: "Kühlschmierstoff Cool 500", manufacturer: "Lubri AG", casNumber: null, usage: "Kühlschmierstoff für CNC-Bearbeitung (wassermischbar)",
+        pictograms: ["GHS07"], signalWord: "WARNING" as const, hStatements: ["H315", "H317", "H412"],
+        pStatements: ["P261", "P272", "P280", "P302_P352", "P333_P313", "P501"], storageClass: "10", waterHazardClass: "2",
+        sdsDate: addMonths(now, -14), sdsReviewDue: addMonths(now, -1), ppe: "Hautschutzplan beachten, Nitrilhandschuhe bei Konzentratkontakt",
+        substitutionChecked: true, substitutionNotes: "Nitrit- und borfreier KSS gewählt.",
+        status: "APPROVED" as const, use: ["CNC-Drehmaschine M-001", 200, "l"] as const, release: false,
+      },
+      {
+        name: "Bremsenreiniger Spray", manufacturer: "AutoPflege KG", casNumber: null, usage: "Reinigung in der Instandhaltung",
+        pictograms: ["GHS02", "GHS07", "GHS09"], signalWord: "DANGER" as const, hStatements: ["H222", "H229", "H315", "H336", "H411"],
+        pStatements: ["P210", "P211", "P251", "P271", "P410_P412"], storageClass: "2B", waterHazardClass: "2",
+        sdsDate: addMonths(now, -2), sdsReviewDue: null, ppe: "Schutzhandschuhe", substitutionChecked: false, substitutionNotes: null,
+        status: "REQUESTED" as const, use: null, release: false,
+      },
+    ];
+    for (const { use, release, ...data } of substances) {
+      const sub = await db.hazardousSubstance.create({ data: { ...data, organizationId: org.id, requestedById: admin.id, decidedById: data.status === "APPROVED" ? sifa.id : null, decidedAt: data.status === "APPROVED" ? addMonths(now, -6) : null } });
+      if (use) await db.substanceUse.create({ data: { substanceId: sub.id, siteId: werk.id, workArea: use[0], quantity: use[1], unit: use[2] } });
+      if (data.status === "APPROVED") {
+        const releasedAt = addMonths(now, -6);
+        await db.operatingInstruction.create({
+          data: {
+            ...draftFromSubstance(sub), organizationId: org.id, seriesId: createId(), substanceId: sub.id,
+            authorId: sifa.id, lastEditorId: sifa.id, postings: use ? use[0] : null,
+            ...(release ? { status: "RELEASED", releasedById: admin.id, releasedAt, reviewDue: addMonths(releasedAt, 24) } : {}),
+          },
+        });
+      }
+    }
+    const cnc = await db.equipment.findFirst({ where: { organizationId: org.id, inventoryNumber: "M-001" } });
+    if (cnc) {
+      const releasedAt = addMonths(now, -23);
+      await db.operatingInstruction.create({
+        data: {
+          organizationId: org.id, seriesId: createId(), type: "MACHINE", title: "CNC-Drehmaschine", scope: "Halle 1, Arbeitsplatz M-001",
+          equipmentId: cnc.id, authorId: sifa.id, lastEditorId: sifa.id, status: "RELEASED", releasedById: admin.id, releasedAt, reviewDue: addMonths(releasedAt, 24),
+          pictograms: ["W024", "M004", "M008", "M003", "P028", "E003"], emergencyPhone: "112", postings: "An der Maschine M-001",
+          hazards: "• Erfassen und Aufwickeln durch rotierende Teile (Futter, Werkstück)\n• Wegfliegende Späne und Werkstücke\n• Schnittverletzungen an Spänen und Werkzeugen\n• Hautkontakt mit Kühlschmierstoff\n• Lärm",
+          protectiveMeasures: "• Bedienung nur durch unterwiesene und beauftragte Personen\n• Schutztür vor dem Start schließen, Verriegelung nicht überbrücken\n• Keine Handschuhe beim Arbeiten an der laufenden Maschine\n• Eng anliegende Kleidung, lange Haare zusammenbinden, keinen Schmuck tragen\n• Schutzbrille, Sicherheitsschuhe, bei Bedarf Gehörschutz tragen\n• Späne nur mit Spänehaken entfernen, nie mit der Hand\n• Hautschutzplan beachten",
+          malfunctions: "• Bei Störungen NOT-HALT betätigen\n• Maschine stillsetzen und gegen Wiedereinschalten sichern\n• Vorgesetzte informieren, Störung nicht selbst beheben",
+          firstAid: "• Ersthelfer heranziehen\n• Bei Verletzungen Maschine sofort stillsetzen\n• Notruf 112\n• Jeden Unfall melden und im Verbandbuch eintragen",
+          maintenance: "• Instandhaltung nur durch beauftragte Fachkräfte bei abgeschalteter und gesicherter Maschine\n• Schutzeinrichtungen täglich vor Arbeitsbeginn auf Funktion prüfen\n• Späne und KSS-Reste getrennt entsorgen",
+        },
+      });
     }
   }
 

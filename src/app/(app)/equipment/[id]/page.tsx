@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/ActionForm";
 import { DueBadge } from "@/components/DueBadge";
@@ -6,6 +7,7 @@ import { INSPECTOR_TYPE_LABELS } from "@/lib/catalog";
 import { db } from "@/lib/db";
 import { classifyDue, formatDate, toInputDate } from "@/lib/dates";
 import { RESULT_LABELS, STATUS_LABELS } from "@/lib/equipment";
+import { STATUS_LABELS as BA_STATUS } from "@/lib/instructions";
 import { requireOrg } from "@/lib/session";
 import { changeStatus, recordInspection, toggleObligation } from "../actions";
 import { EquipmentForm } from "../EquipmentForm";
@@ -27,6 +29,7 @@ export default async function EquipmentDetail({ params }: { params: Promise<{ id
         include: { inspections: { orderBy: { performedAt: "desc" }, take: 5 } },
       },
       statusChanges: { orderBy: { createdAt: "desc" } },
+      instructions: { where: { status: { not: "ARCHIVED" } }, orderBy: { version: "desc" } },
     },
   });
   if (!eq) notFound();
@@ -129,6 +132,22 @@ export default async function EquipmentDetail({ params }: { params: Promise<{ id
           </ActionForm>
         </section>
       )}
+
+      <section className="card">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Betriebsanweisungen</h2>
+          {ctx.can("instructions.edit") && <Link href={`/instructions/new?equipmentId=${eq.id}`} className="btn-secondary">Neue Betriebsanweisung</Link>}
+        </div>
+        {eq.instructions.filter((i) => ctx.can("instructions.edit") || i.status === "RELEASED").length === 0 ? (
+          <p className="text-sm text-slate-500">Keine Betriebsanweisung hinterlegt.</p>
+        ) : (
+          <ul className="space-y-1 text-sm">
+            {eq.instructions.filter((i) => ctx.can("instructions.edit") || i.status === "RELEASED").map((i) => (
+              <li key={i.id}><Link href={`/instructions/${i.id}`} className="text-[var(--brand)] hover:underline">{i.title} · V{i.version}</Link> – {BA_STATUS[i.status]}</li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="card">
         <h2 className="mb-4 text-lg font-semibold">Stammdaten</h2>

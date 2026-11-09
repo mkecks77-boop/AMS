@@ -5,7 +5,7 @@ Online-Werkzeug für Fachkräfte für Arbeitssicherheit (intern und extern) – 
 
 Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 
-## Stand: Phase 1–2
+## Stand: Phase 1–3
 
 | Bereich | Umfang |
 |---|---|
@@ -21,7 +21,11 @@ Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 | Prüfpflichten | Beliebig viele je Anlage, Prüfkatalog mit 19 Vorlagen (DGUV V3, Leitern, Regale, Krane, Stapler, Druckbehälter, Feuerlöscher …), Intervall, Rechtsgrundlage, Art des Prüfers |
 | Prüfungen | Prüfprotokoll; nächste Fälligkeit automatisch; „nicht bestanden“ sperrt die Anlage, Freigabe nur mit Begründung |
 | Fristenkalender | Alle Fristen nach Monat, Ampel (überfällig / ≤ 30 / ≤ 90 Tage), Filter nach Standort und Zeitraum, CSV-Export (Excel) |
-| Dashboard | Überfällige und bald fällige Prüfungen, gesperrte Anlagen |
+| Gefahrstoffverzeichnis | Nach § 6 Abs. 12 GefStoffV: GHS-Piktogramme, Signalwort, H-/P-Sätze mit deutschem Text, Lagerklasse (TRGS 510), WGK, CMR-Erkennung, Einsatzorte und Mengen, CSV-Export |
+| Gefahrstoff-Freigabe | Antrag → Prüfung durch die Sifa (Substitutionsprüfung und SDB-Datum Pflicht) → Freigabe oder begründete Ablehnung; SDB-Wiedervorlage im Fristenkalender |
+| Betriebsanweisungen | Für Gefahrstoffe, Maschinen, Tätigkeiten, Biostoffe und PSA; Standardlayout mit farbigen Balken und Piktogrammen (GHS, ISO 7010); Entwurf wird bei Gefahrstoff-Freigabe automatisch aus den SDB-Daten erzeugt |
+| BA-Freigabe | Entwurf → zur Freigabe → Freigabe im Vier-Augen-Prinzip; Versionierung (alte Version wird archiviert); Überprüfung nach 24 Monaten im Fristenkalender; Druckansicht / PDF |
+| Dashboard | Überfällige und bald fällige Fristen, gesperrte Anlagen, offene Gefahrstoff-Anträge, BA zur Freigabe, Gefahrstoffe ohne gültige BA |
 
 E-Mail-Versand folgt später – bis dahin wird der Einladungslink angezeigt und vom Admin weitergegeben.
 
