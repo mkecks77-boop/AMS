@@ -5,7 +5,7 @@ Online-Werkzeug für Fachkräfte für Arbeitssicherheit (intern und extern) – 
 
 Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 
-## Stand: Phase 1–6
+## Stand: alle Phasen (1–7) umgesetzt
 
 | Bereich | Umfang |
 |---|---|
@@ -37,10 +37,15 @@ Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 | Begehungen | Standard-Checklisten (Betrieb, Büro/Bildschirm) und eigene Checklisten; Planung; Durchführung am Handy (i. O. / Mangel / n. z.); Abschluss nur vollständig mit Mangelbeschreibung; Erfüllungsgrad; Maßnahmen aus Mängeln; Bericht |
 | PSA | Katalog mit Normen und Gebrauchsdauer, Ausgabe mit Größe und Empfangsbestätigung (§ 3 PSA-BV), Austauschfrist, Rückgabe |
 | Beauftragte | Pflichtenübertragung (§ 13 DGUV V1), Sicherheitsbeauftragte, Brandschutz-, Gefahrgut-, Abfall-, Laser-, Strahlenschutzbeauftragte, verantwortliche Elektrofachkraft; Befristung; druckbare Bestellung |
-| Navigation | Gruppierte Menüs (Ereignisse, Gefährdungen, Betrieb, Personal, Verwaltung), „Melden“ immer sichtbar |
+| Arbeitsschutzausschuss | ASA-Sitzungen (§ 11 ASiG) mit automatisch vorbereiteter Tagesordnung samt Kennzahlen, Protokoll, Maßnahmen, Einladung/Protokoll als Ausdruck; vierteljährliche Fälligkeit im Fristenkalender |
+| Einsatzzeit | Tätigkeitsnachweis der Sifa nach Aufgabenfeldern (DGUV V2), Soll/Ist je Jahr |
+| Jahresbericht | Bericht nach § 5 ASiG mit Unfallkennzahlen (Vorjahresvergleich), GBU, Begehungen, Prüfungen, Gefahrstoffen, Maßnahmen, Unterweisungsquote, ASA, Einsatzzeit – druckbar |
+| Zwei-Faktor-Anmeldung | TOTP (RFC 6238) mit QR-Code für Authenticator-Apps, im Profil ein-/ausschaltbar |
+| E-Mail | Einladungen und tägliche Fristen-Zusammenfassung per SMTP (abbestellbar), Versandprotokoll für den Plattform-Betreiber |
+| Navigation | Gruppierte Menüs (Ereignisse, Gefährdungen, Betrieb, Personal, Sifa, Verwaltung), „Melden“ immer sichtbar |
 | Dashboard | Überfällige und bald fällige Fristen, gesperrte Anlagen, offene Gefahrstoff-Anträge, BA zur Freigabe, Gefahrstoffe ohne gültige BA, Unterweisungsquote, Quotenlücken, Tage ohne Ausfallunfall, offene Meldungen, überfällige Maßnahmen |
 
-E-Mail-Versand folgt später – bis dahin wird der Einladungslink angezeigt und vom Admin weitergegeben.
+Ohne konfigurierten SMTP-Server werden Einladungslinks angezeigt und vom Admin weitergegeben.
 
 ## Tech-Stack
 
@@ -83,3 +88,12 @@ npm test
 - Seiten und Server Actions holen den Kontext mit `requireOrg("<recht>")` und filtern **jede**
   Abfrage mit `ctx.organization.id`.
 - Änderungen werden mit `audit()` protokolliert.
+
+## Betrieb in der Cloud
+
+1. **Datenbank**: verwaltete PostgreSQL-Instanz in der EU (z. B. bei Hetzner, IONOS, OVH, AWS Frankfurt, Azure Germany). `DATABASE_URL` setzen.
+2. **Anwendung**: Node-Hosting mit `npm ci && npx prisma migrate deploy && npm run build && npm start` (z. B. Docker auf einem EU-Server, Render/Fly.io in Frankfurt, Vercel mit Region fra1). `APP_URL` auf die öffentliche Adresse setzen.
+3. **E-Mail** (optional): `SMTP_URL` und `MAIL_FROM`.
+4. **Täglicher Lauf**: `CRON_SECRET` setzen und täglich `POST /api/cron/digest` mit `Authorization: Bearer <CRON_SECRET>` aufrufen (Fristen-E-Mails, Löschung alter Verbandbucheinträge). Alternativ `npm run notify` per Cron.
+5. **Erstes Konto**: `npm run setup -- --email … --name …`, dann unter *Verwaltung → Plattform* die Kundenunternehmen anlegen.
+6. **Datenschutz**: Auftragsverarbeitungsvertrag (AVV) mit jedem Kundenunternehmen; Backups der Datenbank täglich; Zwei-Faktor-Anmeldung für Admins und Sifa empfehlen.

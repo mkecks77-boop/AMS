@@ -288,6 +288,23 @@ async function main() {
     ] });
   }
 
+  // ASA-Sitzungen und Einsatzzeit für Muster Metallbau
+  if ((await db.asaMeeting.count({ where: { organizationId: org.id } })) === 0) {
+    const now = new Date();
+    const sifa = await db.user.findUniqueOrThrow({ where: { email: "sifa@example.com" } });
+    await db.organization.update({ where: { id: org.id }, data: { sifaHoursTarget: 60 } });
+    await db.asaMeeting.create({ data: {
+      organizationId: org.id, date: addMonths(now, -2), location: "Besprechungsraum", status: "DONE",
+      participants: "Geschäftsführung, Betriebsrat (2), Betriebsärztin, Erik Extern (Sifa), Tom Dreher (SiBe)",
+      agenda: "1. Begrüßung\n2. Stand der Maßnahmen\n3. Unfallgeschehen\n4. Bericht Sifa\n5. Bericht Betriebsärztin\n6. Verschiedenes",
+      minutes: "TOP 3: Schnittverletzung an M-001 besprochen, Spänehaken werden beschafft.\nTOP 4: Begehung Halle 1 ohne wesentliche Mängel.\nTOP 6: Nächste Sitzung in drei Monaten.",
+    } });
+    const cats = ["WALK", "RISK", "ADVICE", "INCIDENT", "TRAINING", "ASA", "DOCS"];
+    for (let i = 0; i < 14; i++) {
+      await db.timeEntry.create({ data: { organizationId: org.id, userId: sifa.id, date: addMonths(now, -Math.floor(i / 2)), minutes: 60 + (i % 4) * 30, category: cats[i % cats.length], description: null } });
+    }
+  }
+
   console.log("Demodaten angelegt. Passwort: Demo-Passwort1");
 }
 

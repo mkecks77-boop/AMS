@@ -61,6 +61,7 @@ export interface ActionSource {
   riskAssessmentId?: string | null;
   hazardId?: string | null;
   walkthroughId?: string | null;
+  asaMeetingId?: string | null;
 }
 
 export async function createAction(actor: Actor, organizationId: string, input: ActionInput, source: ActionSource = {}) {
@@ -78,6 +79,9 @@ export async function createAction(actor: Actor, organizationId: string, input: 
   if (source.walkthroughId && !(await db.walkthrough.count({ where: { id: source.walkthroughId, organizationId } }))) {
     throw new UserError("Begehung nicht gefunden.");
   }
+  if (source.asaMeetingId && !(await db.asaMeeting.count({ where: { id: source.asaMeetingId, organizationId } }))) {
+    throw new UserError("Sitzung nicht gefunden.");
+  }
   const a = await db.action.create({
     data: {
       organizationId,
@@ -89,7 +93,7 @@ export async function createAction(actor: Actor, organizationId: string, input: 
       dueDate: input.dueDate,
       createdById: actor.userId,
       ...source,
-      sourceType: source.sourceType ?? (source.incidentId ? "INCIDENT" : source.riskAssessmentId ? "RISK" : source.walkthroughId ? "AUDIT" : "OTHER"),
+      sourceType: source.sourceType ?? (source.incidentId ? "INCIDENT" : source.riskAssessmentId ? "RISK" : source.walkthroughId ? "AUDIT" : source.asaMeetingId ? "ASA" : "OTHER"),
     },
   });
   await audit({ organizationId, userId: actor.userId, action: "action.created", entity: "Action", entityId: a.id, details: { title: a.title } });

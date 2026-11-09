@@ -72,6 +72,15 @@ const LABELS: Record<string, string> = {
   "appointment.created": "Beauftragung erfasst",
   "appointment.ended": "Beauftragung beendet",
   "appointment.signed": "Beauftragung unterschrieben",
+  "asa.planned": "ASA-Sitzung geplant",
+  "asa.updated": "ASA-Sitzung geändert",
+  "asa.completed": "ASA-Protokoll abgeschlossen",
+  "time.logged": "Einsatzzeit erfasst",
+  "time.deleted": "Einsatzzeit gelöscht",
+  "organization.sifa_target": "Soll-Einsatzzeit geändert",
+  "password.changed": "Passwort geändert",
+  "totp.enabled": "Zwei-Faktor-Anmeldung aktiviert",
+  "totp.disabled": "Zwei-Faktor-Anmeldung deaktiviert",
 };
 
 export default async function AuditPage() {
