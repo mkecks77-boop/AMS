@@ -27,6 +27,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   RISK: "Gefährdungsbeurteilung",
   INSPECTION: "Prüfung",
   ASA: "ASA-Sitzung",
+  LEGAL: "Rechtskataster",
   OTHER: "Sonstiges",
 };
 
@@ -62,6 +63,7 @@ export interface ActionSource {
   hazardId?: string | null;
   walkthroughId?: string | null;
   asaMeetingId?: string | null;
+  legalRequirementId?: string | null;
 }
 
 export async function createAction(actor: Actor, organizationId: string, input: ActionInput, source: ActionSource = {}) {
@@ -79,6 +81,9 @@ export async function createAction(actor: Actor, organizationId: string, input: 
   if (source.walkthroughId && !(await db.walkthrough.count({ where: { id: source.walkthroughId, organizationId } }))) {
     throw new UserError("Begehung nicht gefunden.");
   }
+  if (source.legalRequirementId && !(await db.legalRequirement.count({ where: { id: source.legalRequirementId, organizationId } }))) {
+    throw new UserError("Anforderung nicht gefunden.");
+  }
   if (source.asaMeetingId && !(await db.asaMeeting.count({ where: { id: source.asaMeetingId, organizationId } }))) {
     throw new UserError("Sitzung nicht gefunden.");
   }
@@ -93,7 +98,7 @@ export async function createAction(actor: Actor, organizationId: string, input: 
       dueDate: input.dueDate,
       createdById: actor.userId,
       ...source,
-      sourceType: source.sourceType ?? (source.incidentId ? "INCIDENT" : source.riskAssessmentId ? "RISK" : source.walkthroughId ? "AUDIT" : source.asaMeetingId ? "ASA" : "OTHER"),
+      sourceType: source.sourceType ?? (source.incidentId ? "INCIDENT" : source.riskAssessmentId ? "RISK" : source.walkthroughId ? "AUDIT" : source.asaMeetingId ? "ASA" : source.legalRequirementId ? "LEGAL" : "OTHER"),
     },
   });
   await audit({ organizationId, userId: actor.userId, action: "action.created", entity: "Action", entityId: a.id, details: { title: a.title } });

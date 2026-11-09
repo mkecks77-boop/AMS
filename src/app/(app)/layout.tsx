@@ -23,16 +23,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { label: "Betrieb", items: [
       ...item("/equipment", "Anlagen & Maschinen", ctx.can("equipment.view")),
       ...item("/ppe", "PSA", ctx.can("ppe.view")),
+      ...item("/contractors", "Fremdfirmen", ctx.can("contractors.view")),
+      ...item("/permits", "Erlaubnisscheine", ctx.can("permits.request")),
     ] },
     { label: "Personal", items: [
       ...item("/trainings", "Unterweisungen", ctx.can("trainings.view")),
       ...item("/trainings/matrix", "Schulungsmatrix", ctx.can("trainings.view")),
       ...item("/qualifications", "Qualifikationen", ctx.can("trainings.view")),
+      ...item("/medical", "Arbeitsmedizinische Vorsorge", ctx.can("medical.view")),
       ...item("/appointments", "Beauftragte", ctx.can("appointments.view")),
       ...item("/employees", "Mitarbeiter", ctx.can("masterdata.view")),
     ] },
     { label: "Sifa", items: [
       ...item("/asa", "Arbeitsschutzausschuss", ctx.can("asa.view")),
+      ...item("/legal", "Rechtskataster", ctx.can("legal.view")),
       ...item("/time", "Einsatzzeit", ctx.can("reports.view")),
       ...item("/print/annual", "Jahresbericht", ctx.can("reports.view")),
     ] },

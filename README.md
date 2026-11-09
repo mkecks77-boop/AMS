@@ -5,7 +5,7 @@ Online-Werkzeug für Fachkräfte für Arbeitssicherheit (intern und extern) – 
 
 Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 
-## Stand: alle Phasen (1–7) umgesetzt
+## Stand: Phasen 1–8 umgesetzt
 
 | Bereich | Umfang |
 |---|---|
@@ -42,6 +42,10 @@ Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 | Jahresbericht | Bericht nach § 5 ASiG mit Unfallkennzahlen (Vorjahresvergleich), GBU, Begehungen, Prüfungen, Gefahrstoffen, Maßnahmen, Unterweisungsquote, ASA, Einsatzzeit – druckbar |
 | Zwei-Faktor-Anmeldung | TOTP (RFC 6238) mit QR-Code für Authenticator-Apps, im Profil ein-/ausschaltbar |
 | E-Mail | Einladungen und tägliche Fristen-Zusammenfassung per SMTP (abbestellbar), Versandprotokoll für den Plattform-Betreiber |
+| Arbeitsmedizinische Vorsorge | Vorsorgekartei nach ArbMedVV ohne Befunde: Pflicht-, Angebots-, Wunschvorsorge, Zuordnung nach Abteilung, Übersicht mit Warnung „Tätigkeitsverbot“ bei fehlender Pflichtvorsorge, Fristen |
+| Fremdfirmen | Firmen mit Haftpflichtnachweis und Sperre, Personen mit Fremdfirmeneinweisung (12 Monate), Einsatzbereitschaft auf einen Blick |
+| Erlaubnisscheine | Heißarbeiten, enge Räume, Absturz, Elektro, Erdarbeiten: Antrag → Genehmigung im Vier-Augen-Prinzip (prüft Sperre, Haftpflicht, Einweisungen) → Freigabe vor Ort mit Checkliste → Abschluss mit Brandwache (≥ 30 min); max. 24 h; Ausdruck |
+| Rechtskataster | Grundbestand von 23 Pflichten (ArbSchG, ASiG, DGUV V1/V2/V3, BetrSichV, GefStoffV, ArbMedVV …), Bewertung mit Nachweis, Erfüllungsgrad, Maßnahmen für Lücken, jährliche Wiedervorlage |
 | Navigation | Gruppierte Menüs (Ereignisse, Gefährdungen, Betrieb, Personal, Sifa, Verwaltung), „Melden“ immer sichtbar |
 | Dashboard | Überfällige und bald fällige Fristen, gesperrte Anlagen, offene Gefahrstoff-Anträge, BA zur Freigabe, Gefahrstoffe ohne gültige BA, Unterweisungsquote, Quotenlücken, Tage ohne Ausfallunfall, offene Meldungen, überfällige Maßnahmen |
 

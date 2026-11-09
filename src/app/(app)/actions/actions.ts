@@ -28,7 +28,7 @@ export async function addAction(_: FormState, fd: FormData): Promise<FormState> 
   return run(async () => {
     if (!i.dueDate) return { error: "Bitte eine Frist angeben." };
     const source: Record<string, string> = {};
-    for (const k of ["sourceType", "incidentId", "riskAssessmentId", "hazardId", "walkthroughId", "asaMeetingId"]) {
+    for (const k of ["sourceType", "incidentId", "riskAssessmentId", "hazardId", "walkthroughId", "asaMeetingId", "legalRequirementId"]) {
       const v = str(fd, k);
       if (v) source[k] = v;
     }

@@ -305,6 +305,38 @@ async function main() {
     }
   }
 
+  // Vorsorge, Fremdfirmen, Rechtskataster für Muster Metallbau
+  if ((await db.contractor.count({ where: { organizationId: org.id } })) === 0) {
+    const now = new Date();
+    const fert = await db.department.findFirst({ where: { organizationId: org.id, name: "Fertigung" } });
+    const by = async (n: string) => db.employee.findFirstOrThrow({ where: { organizationId: org.id, lastName: n } });
+    const dreher = await by("Dreher"), jung = await by("Jung");
+    const laerm = await db.medicalCheckType.create({ data: { organizationId: org.id, name: "Lärm (Pflicht)", kind: "MANDATORY", reason: "Lärmexposition ≥ 85 dB(A)", intervalMonths: 36, requirements: { create: fert ? [{ departmentId: fert.id }] : [] } } });
+    await db.medicalCheckType.create({ data: { organizationId: org.id, name: "Bildschirmarbeit", kind: "OFFER", reason: "Tätigkeiten an Bildschirmgeräten", intervalMonths: 36 } });
+    await db.medicalRecord.create({ data: { typeId: laerm.id, employeeId: dreher.id, date: addMonths(now, -30), nextDue: addMonths(now, 6) } });
+    void jung; // Jung hat noch keine Lärmvorsorge → Tätigkeitsverbot in der Demo
+    const c1 = await db.contractor.create({ data: { organizationId: org.id, name: "Schweißtechnik Nord GmbH", contactName: "Karl Kraft", phone: "0123 4567", insuranceUntil: addMonths(now, 8) } });
+    const w1 = await db.contractorWorker.create({ data: { contractorId: c1.id, name: "Karl Kraft", briefedAt: addMonths(now, -11), briefedUntil: addMonths(now, 1) } });
+    await db.contractorWorker.create({ data: { contractorId: c1.id, name: "Paul Funke" } });
+    await db.contractor.create({ data: { organizationId: org.id, name: "Dachbau Süd KG", insuranceUntil: addMonths(now, -1) } });
+    const werk = await db.site.findFirstOrThrow({ where: { organizationId: org.id, name: "Werk Nord" } });
+    const admin = await db.user.findUniqueOrThrow({ where: { email: "admin@metallbau.example.com" } });
+    const from = new Date(now.getTime() + 86400000); from.setUTCHours(7, 0, 0, 0);
+    await db.permit.create({ data: { organizationId: org.id, number: `E${from.getUTCFullYear()}-001`, type: "HOT_WORK", siteId: werk.id, location: "Halle 1, Hallendach Achse 4", description: "Schweißarbeiten an Dachträger", contractorId: c1.id, validFrom: from, validTo: new Date(from.getTime() + 8 * 3600000), requestedById: admin.id, workers: { create: [{ workerId: w1.id }] } } });
+    const legal: [string, string, string, string, "FULFILLED" | "PARTIAL" | "NOT_EVALUATED", string | null][] = [
+      ["Organisation", "ArbSchG", "§§ 5, 6", "Gefährdungsbeurteilung für alle Tätigkeiten durchführen und dokumentieren", "PARTIAL", null],
+      ["Organisation", "ASiG / DGUV V2", "§§ 2, 5", "Betriebsarzt und Fachkraft für Arbeitssicherheit schriftlich bestellen", "FULFILLED", "Verträge vom 01.01.2024"],
+      ["Organisation", "ASiG", "§ 11", "Arbeitsschutzausschuss mindestens vierteljährlich", "PARTIAL", null],
+      ["Erste Hilfe", "DGUV Vorschrift 1", "§§ 24–26", "Ersthelfer in ausreichender Zahl, Erste-Hilfe-Material, Verbandbuch", "FULFILLED", "Qualifikationen im AMS, Verbandbuch digital"],
+      ["Arbeitsmittel", "BetrSichV", "§§ 3, 14", "Prüfungen von Arbeitsmitteln festlegen und durchführen lassen", "FULFILLED", "Anlagenverzeichnis mit Prüfpflichten"],
+      ["Gefahrstoffe", "GefStoffV", "§ 6", "Gefahrstoffverzeichnis und Substitutionsprüfung", "FULFILLED", "Gefahrstoffverzeichnis im AMS"],
+      ["Gesundheit", "ArbMedVV", "§§ 3–5", "Pflicht- und Angebotsvorsorge veranlassen", "NOT_EVALUATED", null],
+    ];
+    for (const [area, law, reference, obligation, status, evidence] of legal) {
+      await db.legalRequirement.create({ data: { organizationId: org.id, area, law, reference, obligation, status, evidence, evaluatedAt: status === "NOT_EVALUATED" ? null : addMonths(now, -3), reviewDue: status === "NOT_EVALUATED" ? null : addMonths(now, 9) } });
+    }
+  }
+
   console.log("Demodaten angelegt. Passwort: Demo-Passwort1");
 }
 

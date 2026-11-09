@@ -5,6 +5,7 @@ import { formatDate } from "@/lib/dates";
 import { countByStatus, getDeadlines } from "@/lib/deadlines";
 import { requireOrg } from "@/lib/session";
 import { getMatrix, quotaReport } from "@/lib/trainings";
+import { medicalOverview } from "@/lib/medical";
 
 export const metadata = { title: "Übersicht" };
 
@@ -27,6 +28,10 @@ export default async function Dashboard() {
   const [draftRisks, plannedWalks] = await Promise.all([
     ctx.can("risk.manage") ? db.riskAssessment.count({ where: { organizationId: orgId, status: "DRAFT" } }) : 0,
     ctx.can("walkthroughs.view") ? db.walkthrough.count({ where: { organizationId: orgId, status: "PLANNED" } }) : 0,
+  ]);
+  const [medBlocked, permitsOpen] = await Promise.all([
+    ctx.can("medical.view") ? medicalOverview(orgId).then((o) => o.rows.filter((r) => r.blocked).length) : 0,
+    ctx.can("permits.approve") ? db.permit.count({ where: { organizationId: orgId, status: { in: ["REQUESTED", "APPROVED", "ACTIVE"] } } }) : 0,
   ]);
   const daysWithout = lastAccident ? Math.floor((Date.now() - lastAccident.occurredAt.getTime()) / 86400000) : null;
   const [requested, baInReview, missingBa, members, equipmentCount, locked, deadlines] = await Promise.all([
@@ -53,6 +58,8 @@ export default async function Dashboard() {
     { label: "Überfällige Maßnahmen", value: overdueActions, href: "/actions?overdue=1", alert: overdueActions > 0, show: ctx.can("actions.view") },
     { label: "GBU im Entwurf", value: draftRisks, href: "/risk", show: ctx.can("risk.manage") },
     { label: "Geplante Begehungen", value: plannedWalks, href: "/walkthroughs", show: ctx.can("walkthroughs.view") },
+    { label: "Tätigkeitsverbot (Pflichtvorsorge fehlt)", value: medBlocked, href: "/medical", alert: medBlocked > 0, show: ctx.can("medical.view") },
+    { label: "Offene Erlaubnisscheine", value: permitsOpen, href: "/permits", show: ctx.can("permits.approve") },
     { label: "Gefahrstoff-Anträge", value: requested, href: "/substances?status=REQUESTED", alert: requested > 0, show: ctx.can("substances.approve") },
     { label: "BA zur Freigabe", value: baInReview, href: "/instructions?status=IN_REVIEW", show: ctx.can("instructions.release") },
     { label: "Gefahrstoffe ohne gültige BA", value: missingBa, href: "/substances", alert: missingBa > 0, show: ctx.can("instructions.edit") },
