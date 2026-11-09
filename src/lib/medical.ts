@@ -1,5 +1,5 @@
 import type { MedicalKind, MedicalOutcome } from "@prisma/client";
-import { db } from "./db";
+import { db, transaction } from "./db";
 import { audit } from "./audit";
 import { addMonths } from "./dates";
 import { trainingStatus, type TrainingStatus } from "./trainings";
@@ -37,10 +37,12 @@ export async function setMedicalRequirements(actor: Actor, organizationId: strin
   if (!(await db.medicalCheckType.count({ where: { id: typeId, organizationId } }))) throw new UserError("Vorsorgeanlass nicht gefunden.");
   const deps = input.allEmployees ? [] : input.departmentIds;
   if (deps.length && (await db.department.count({ where: { id: { in: deps }, organizationId } })) !== deps.length) throw new UserError("Abteilung nicht gefunden.");
-  await db.$transaction([
-    db.medicalRequirement.deleteMany({ where: { typeId } }),
-    ...(input.allEmployees ? [{ departmentId: null }] : deps.map((d) => ({ departmentId: d }))).map((r) => db.medicalRequirement.create({ data: { typeId, ...r } })),
-  ]);
+  await transaction(async (tx) => {
+    await tx.medicalRequirement.deleteMany({ where: { typeId } });
+    for (const r of input.allEmployees ? [{ departmentId: null }] : deps.map((d) => ({ departmentId: d }))) {
+      await tx.medicalRequirement.create({ data: { typeId, ...r } });
+    }
+  });
   await audit({ organizationId, userId: actor.userId, action: "medical.requirements", entity: "MedicalCheckType", entityId: typeId });
 }
 

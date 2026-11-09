@@ -1,6 +1,6 @@
 import type { HazardousSubstance, InstructionStatus, InstructionType, OperatingInstruction } from "@prisma/client";
 import { createId } from "./id";
-import { db } from "./db";
+import { db, transaction } from "./db";
 import { audit } from "./audit";
 import { addMonths } from "./dates";
 import { cmrCategory, formatStatement, statementText } from "./ghs";
@@ -207,16 +207,16 @@ export async function releaseInstruction(actor: Actor, organizationId: string, i
   const i = await load(organizationId, id);
   const check = canRelease(i, actor.userId);
   if (!check.ok) throw new UserError(check.reason);
-  await db.$transaction([
-    db.operatingInstruction.updateMany({
+  await transaction(async (tx) => {
+    await tx.operatingInstruction.updateMany({
       where: { seriesId: i.seriesId, status: "RELEASED" },
       data: { status: "ARCHIVED" },
-    }),
-    db.operatingInstruction.update({
+    });
+    await tx.operatingInstruction.update({
       where: { id },
       data: { status: "RELEASED", releasedById: actor.userId, releasedAt: now, reviewDue: addMonths(now, REVIEW_MONTHS) },
-    }),
-  ]);
+    });
+  });
   await audit({ organizationId, userId: actor.userId, action: "instruction.released", entity: "OperatingInstruction", entityId: id, details: { title: i.title, version: i.version } });
 }
 

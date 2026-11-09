@@ -17,8 +17,9 @@ jobs:
         options: >-
           --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     env:
+      # Migrationen als Eigentümer, Tests als eingeschränkte Rolle (Row-Level Security wirkt nur ohne Superuser)
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ams_test
-      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ams_test
+      TEST_DATABASE_URL: postgresql://ams_app:ams_app@localhost:5432/ams_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,6 +28,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma migrate deploy
+      - name: Anwendungsrolle ohne Superuser anlegen
+        run: psql "$DATABASE_URL" -v app_password="'ams_app'" -f scripts/db-app-role.sql
       - run: npm run typecheck
       - run: npm test
       - run: npm run build

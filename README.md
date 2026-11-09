@@ -5,11 +5,11 @@ Online-Werkzeug für Fachkräfte für Arbeitssicherheit (intern und extern) – 
 
 Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 
-## Stand: Phasen 1–11 umgesetzt
+## Stand: Phasen 1–12 umgesetzt
 
 | Bereich | Umfang |
 |---|---|
-| Mandanten | Unternehmen anlegen, sperren/aktivieren (Plattform-Betreiber); Daten strikt je Unternehmen |
+| Mandanten | Unternehmen anlegen, sperren/aktivieren (Plattform-Betreiber); Daten strikt je Unternehmen – doppelt abgesichert: Filter in der Anwendung **und** Row-Level Security in PostgreSQL |
 | Anmeldung | E-Mail + Passwort (bcrypt), Sitzungs-Cookie (nur Hash in der DB), 14 Tage gültig; optional Zwei-Faktor (TOTP) oder Single Sign-on |
 | Single Sign-on | Je Unternehmen per OpenID Connect (Microsoft Entra ID, Google, Keycloak …): Zuordnung über E-Mail-Domain, PKCE + state + nonce, Signaturprüfung über JWKS, Client-Secret AES-256-GCM-verschlüsselt, optional automatisches Anlegen neuer Mitarbeitender und Sperre der Passwort-Anmeldung |
 | Unternehmens-Umschalter | Externe Sifa wechselt zwischen betreuten Unternehmen |
@@ -84,10 +84,33 @@ Demo-Zugänge (Passwort `Demo-Passwort1`):
 
 ```bash
 # eigene Testdatenbank (wird bei jedem Lauf geleert)
-TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ams_test
-DATABASE_URL=$TEST_DATABASE_URL npx prisma migrate deploy
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ams_test npx prisma migrate deploy
+psql postgresql://postgres:postgres@localhost:5432/ams_test -v app_password="'ams_app'" -f scripts/db-app-role.sql
+# Tests laufen als Rolle ams_app (ohne Superuser), damit RLS mitgetestet wird
+TEST_DATABASE_URL=postgresql://ams_app:ams_app@localhost:5432/ams_test
 npm test
 ```
+
+## Mandantentrennung in der Datenbank (Row-Level Security)
+
+Alle 30 Tabellen mit `organizationId` haben eine RLS-Policy. Sobald eine Anfrage über `requireOrg()` einem Unternehmen
+zugeordnet ist, setzt die Anwendung vor jeder Abfrage `app.org_id`; PostgreSQL liefert und ändert dann nur Zeilen dieses
+Unternehmens – auch wenn im Code einmal ein Filter fehlt. Abläufe ohne Unternehmensbezug (Anmeldung, Plattform-Verwaltung,
+nächtlicher Lauf) laufen ohne diese Einschränkung.
+
+**Wichtig für den Betrieb:** Superuser und Rollen mit `BYPASSRLS` umgehen RLS. Die Anwendung muss deshalb mit einer eigenen Rolle verbinden:
+
+```bash
+# Migrationen als Eigentümer
+DATABASE_URL="postgresql://eigentuemer:…@host/ams" npx prisma migrate deploy
+# Anwendungsrolle anlegen bzw. Rechte aktualisieren (nach jeder Migration ausführen)
+psql "postgresql://eigentuemer:…@host/ams" -v app_password="'starkes-passwort'" -f scripts/db-app-role.sql
+# Anwendung mit der eingeschränkten Rolle starten
+DATABASE_URL="postgresql://ams_app:starkes-passwort@host/ams" npm start
+```
+
+Verbindet die Anwendung doch mit einer Rolle, die RLS umgeht, steht beim ersten Seitenaufruf eine Warnung im Server-Log.
+Tabellen ohne eigene `organizationId` (z. B. Gefährdungen einer GBU, Prüfprotokolle) sind über ihren übergeordneten Datensatz geschützt.
 
 ## Regeln für neue Module
 
@@ -95,6 +118,9 @@ npm test
 - Seiten und Server Actions holen den Kontext mit `requireOrg("<recht>")` und filtern **jede**
   Abfrage mit `ctx.organization.id`.
 - Änderungen werden mit `audit()` protokolliert.
+- Neue Tabellen mit `organizationId` bekommen in ihrer Migration eine RLS-Policy (Vorlage: Migration `phase12_row_level_security`).
+- Transaktionen über `transaction(async (tx) => …)` aus `@/lib/db`, nicht `db.$transaction` – sonst fehlt der Mandanten-Kontext.
+- Bewusst mandantenübergreifende Abfragen nur mit `withoutTenant(…)` und Begründung im Kommentar.
 
 ## Betrieb in der Cloud
 
