@@ -1,5 +1,6 @@
 import type { Role } from "@prisma/client";
-import { db } from "./db";
+import { db, transaction } from "./db";
+import { withoutTenant } from "./tenant";
 import { audit } from "./audit";
 import { hashPassword, validatePassword } from "./password";
 import { INVITATION_DAYS, daysFromNow, generateToken, hashToken } from "./tokens";
@@ -109,7 +110,7 @@ export async function acceptInvitation(token: string, input: { name: string; pas
   }
   const passwordHash = await hashPassword(input.password);
 
-  return db.$transaction(async (tx) => {
+  return transaction(async (tx) => {
     const user = existing
       ? await tx.user.update({ where: { id: existing.id }, data: { name, passwordHash } })
       : await tx.user.create({ data: { email: inv.email, name, passwordHash } });
@@ -186,17 +187,21 @@ export async function createPasswordReset(
   actor: Actor,
   input: { organizationId: string; targetUserId: string },
 ): Promise<string> {
-  const target = await db.user.findUnique({
-    where: { id: input.targetUserId },
-    include: { memberships: { select: { organizationId: true } } },
+  // bewusst mandantenübergreifend: Gehört die Person auch anderen Unternehmen an?
+  const { target, adminOrgIds } = await withoutTenant(async () => {
+    const target = await db.user.findUnique({
+      where: { id: input.targetUserId },
+      include: { memberships: { select: { organizationId: true } } },
+    });
+    const adminOrgIds = (
+      await db.membership.findMany({
+        where: { userId: actor.userId, role: "ORG_ADMIN", active: true },
+        select: { organizationId: true },
+      })
+    ).map((m) => m.organizationId);
+    return { target, adminOrgIds };
   });
   if (!target) throw new UserError("Person nicht gefunden.");
-  const adminOrgIds = (
-    await db.membership.findMany({
-      where: { userId: actor.userId, role: "ORG_ADMIN", active: true },
-      select: { organizationId: true },
-    })
-  ).map((m) => m.organizationId);
   const targetOrgIds = target.memberships.map((m) => m.organizationId);
   if (!targetOrgIds.includes(input.organizationId) && !actor.isPlatformAdmin) {
     throw new UserError("Person nicht gefunden.");
@@ -231,11 +236,11 @@ export async function resetPassword(token: string, password: string) {
   const pwError = validatePassword(password);
   if (pwError) throw new UserError(pwError);
   const passwordHash = await hashPassword(password);
-  await db.$transaction([
-    db.user.update({ where: { id: reset.userId }, data: { passwordHash } }),
-    db.passwordReset.update({ where: { id: reset.id }, data: { usedAt: new Date() } }),
-    db.session.deleteMany({ where: { userId: reset.userId } }),
-  ]);
+  await transaction(async (tx) => {
+    await tx.user.update({ where: { id: reset.userId }, data: { passwordHash } });
+    await tx.passwordReset.update({ where: { id: reset.id }, data: { usedAt: new Date() } });
+    await tx.session.deleteMany({ where: { userId: reset.userId } });
+  });
   await audit({ userId: reset.userId, action: "password.reset", entity: "User", entityId: reset.userId });
 }
 

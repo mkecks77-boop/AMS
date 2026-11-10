@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { db } from "./db";
+import { withoutTenant } from "./tenant";
 import { audit } from "./audit";
 import { decrypt, encrypt } from "./secretbox";
 import { hashToken } from "./tokens";
@@ -39,7 +40,8 @@ export async function saveSsoConfig(
   if (!input.clientId) throw new UserError("Bitte die Client-ID angeben.");
   const domains = [...new Set(input.emailDomains.map((d) => d.trim().toLowerCase().replace(/^@/, "")).filter(Boolean))];
   if (!domains.length || domains.some((d) => !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(d))) throw new UserError("Bitte gültige E-Mail-Domains angeben (z. B. firma.de).");
-  const taken = await db.ssoConfig.findFirst({ where: { organizationId: { not: organizationId }, emailDomains: { hasSome: domains } } });
+  // bewusst mandantenübergreifend: Domain darf nur einem Unternehmen gehören
+  const taken = await withoutTenant(() => db.ssoConfig.findFirst({ where: { organizationId: { not: organizationId }, emailDomains: { hasSome: domains } } }));
   if (taken) throw new UserError("Eine der Domains ist bereits einem anderen Unternehmen zugeordnet.");
   const existing = await db.ssoConfig.findUnique({ where: { organizationId } });
   if (!existing && !input.clientSecret) throw new UserError("Bitte das Client-Secret angeben.");

@@ -1,5 +1,5 @@
 import type { TrainingKind } from "@prisma/client";
-import { db } from "./db";
+import { db, transaction } from "./db";
 import { audit } from "./audit";
 import { addMonths, classifyDue, type DueStatus } from "./dates";
 import { SECTION_LABELS } from "./instructions";
@@ -127,10 +127,10 @@ export async function setRequirements(
   const rows = input.allEmployees
     ? [{ departmentId: null, apprenticesOnly: input.apprenticesOnly }]
     : deps.map((d) => ({ departmentId: d, apprenticesOnly: input.apprenticesOnly }));
-  await db.$transaction([
-    db.trainingRequirement.deleteMany({ where: { topicId } }),
-    ...rows.map((r) => db.trainingRequirement.create({ data: { topicId, ...r } })),
-  ]);
+  await transaction(async (tx) => {
+    await tx.trainingRequirement.deleteMany({ where: { topicId } });
+    for (const r of rows) await tx.trainingRequirement.create({ data: { topicId, ...r } });
+  });
   await audit({ organizationId, userId: actor.userId, action: "training.requirements", entity: "TrainingTopic", entityId: topicId, details: input });
 }
 
@@ -150,7 +150,7 @@ export async function recordSession(
   const employees = await db.employee.findMany({ where: { id: { in: ids }, organizationId } });
   if (employees.length !== ids.length) throw new UserError("Mitarbeiter/in nicht gefunden.");
 
-  const session = await db.$transaction(async (tx) => {
+  const session = await transaction(async (tx) => {
     const s = await tx.trainingSession.create({
       data: { topicId: topic.id, date: input.date, trainer: input.trainer, location: input.location || null, notes: input.notes || null, userId: actor.userId },
     });

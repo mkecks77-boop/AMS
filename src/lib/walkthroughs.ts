@@ -1,5 +1,5 @@
 import type { AnswerResult } from "@prisma/client";
-import { db } from "./db";
+import { db, transaction } from "./db";
 import { audit } from "./audit";
 import { assertOwned } from "./masterdata";
 import { UserError, type Actor } from "./users";
@@ -116,18 +116,19 @@ export async function saveAnswers(
     const missing = answers.filter((a) => a.result === "DEFECT" && !a.note);
     if (missing.length) throw new UserError("Bitte jeden Mangel kurz beschreiben.");
   }
-  await db.$transaction([
-    ...answers.map((a) =>
-      db.walkthroughAnswer.upsert({
+  await transaction(async (tx) => {
+    for (const a of answers) {
+      await tx.walkthroughAnswer.upsert({
         where: { walkthroughId_itemId: { walkthroughId, itemId: a.itemId } },
         create: { walkthroughId, itemId: a.itemId, result: a.result, note: a.note || null },
         update: { result: a.result, note: a.note || null },
-      }),
-    ),
-    db.walkthrough.update({
+      });
+    }
+    await tx.walkthrough.update({
       where: { id: walkthroughId },
       data: { summary: opts.summary ?? w.summary, ...(opts.complete ? { status: "DONE", performedAt: opts.performedAt ?? new Date() } : {}) },
-    }),
-  ]);
+    });
+  });
+
   await audit({ organizationId, userId: actor.userId, action: opts.complete ? "walkthrough.completed" : "walkthrough.saved", entity: "Walkthrough", entityId: walkthroughId });
 }

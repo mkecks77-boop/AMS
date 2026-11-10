@@ -2,7 +2,8 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Role } from "@prisma/client";
-import { db } from "./db";
+import { checkRlsRole, db } from "./db";
+import { enterTenant, withoutTenant } from "./tenant";
 import { can, type Permission } from "./roles";
 import { SESSION_DAYS, daysFromNow, generateToken, hashToken } from "./tokens";
 
@@ -34,7 +35,8 @@ export async function destroySession() {
 export async function getSession() {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
-  const session = await db.session.findUnique({
+  // bewusst mandantenübergreifend: Mitgliedschaften in allen Unternehmen (Umschalter, Berechtigungsprüfung)
+  const session = await withoutTenant(() => db.session.findUnique({
     where: { tokenHash: hashToken(token) },
     include: {
       user: {
@@ -47,7 +49,7 @@ export async function getSession() {
         },
       },
     },
-  });
+  }));
   if (!session || session.expiresAt < new Date() || !session.user.active) return null;
   return session;
 }
@@ -89,6 +91,10 @@ export async function requireOrg(permission?: Permission): Promise<OrgContext> {
   const role = membership?.role ?? null;
   const access = { isPlatformAdmin: user.isPlatformAdmin, role };
   if (permission && !can(access, permission)) redirect("/forbidden");
+
+  // ab hier schränkt die Datenbank (RLS) alle Abfragen dieser Anfrage auf das Unternehmen ein
+  await enterTenant(organization.id);
+  void checkRlsRole();
 
   return {
     session,

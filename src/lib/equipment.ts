@@ -1,5 +1,5 @@
 import { Prisma, type EquipmentStatus, type InspectionResult, type InspectorType } from "@prisma/client";
-import { db } from "./db";
+import { db, transaction } from "./db";
 import { audit } from "./audit";
 import { addMonths } from "./dates";
 import { assertOwned } from "./masterdata";
@@ -108,12 +108,13 @@ export async function changeEquipmentStatus(
   if (eq.status === "LOCKED" && to === "ACTIVE" && !reason) {
     throw new UserError("Bitte begründen, warum die Sperre aufgehoben wird (z. B. Mangel behoben, Nachprüfung bestanden).");
   }
-  const [updated] = await db.$transaction([
-    db.equipment.update({ where: { id: eq.id }, data: { status: to } }),
-    db.equipmentStatusChange.create({
+  const updated = await transaction(async (tx) => {
+    const u = await tx.equipment.update({ where: { id: eq.id }, data: { status: to } });
+    await tx.equipmentStatusChange.create({
       data: { equipmentId: eq.id, from: eq.status, to, reason: reason || null, userId: actor.userId },
-    }),
-  ]);
+    });
+    return u;
+  });
   await audit({
     organizationId,
     userId: actor.userId,
@@ -202,7 +203,7 @@ export async function recordInspection(
   const nextDueAt = addMonths(input.performedAt, ob.intervalMonths);
   const newer = ob.lastInspectedAt && ob.lastInspectedAt > input.performedAt;
 
-  const inspection = await db.$transaction(async (tx) => {
+  const inspection = await transaction(async (tx) => {
     const created = await tx.inspection.create({
       data: {
         obligationId: ob.id,

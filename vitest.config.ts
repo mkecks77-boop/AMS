@@ -7,9 +7,10 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     fileParallelism: false,
     env: {
-      // Eigene Testdatenbank – wird bei jedem Testlauf geleert
+      // Eigene Testdatenbank – wird bei jedem Testlauf geleert.
+      // Rolle ams_app ohne Superuser-Rechte, damit Row-Level Security wirkt (scripts/db-app-role.sql).
       DATABASE_URL:
-        process.env.TEST_DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/ams_test",
+        process.env.TEST_DATABASE_URL ?? "postgresql://ams_app:ams_app@localhost:5432/ams_test",
     },
   },
 });

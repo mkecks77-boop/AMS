@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { readAttachment } from "@/lib/files";
 import { getSession } from "@/lib/session";
 import { can } from "@/lib/roles";
+import { enterTenant } from "@/lib/tenant";
 
 /** Download mit Rechteprüfung. Bilder und PDF werden inline angezeigt, alles andere als Download. */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -10,6 +11,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (!session || !orgId) return new NextResponse("Nicht angemeldet", { status: 401 });
   const membership = session.user.memberships.find((m) => m.organizationId === orgId);
   if (!membership && !session.user.isPlatformAdmin) return new NextResponse("Nicht gefunden", { status: 404 });
+  await enterTenant(orgId);
   const access = { isPlatformAdmin: session.user.isPlatformAdmin, role: membership?.role ?? null };
   const { id } = await params;
   const file = await readAttachment(orgId, id, (p) => can(access, p));
