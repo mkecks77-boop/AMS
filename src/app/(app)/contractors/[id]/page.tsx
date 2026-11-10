@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { formatDate, toInputDate } from "@/lib/dates";
 import { contractorProblems, PERMIT_STATUS_LABELS, PERMIT_TYPE_LABELS } from "@/lib/contractors";
 import { requireOrg } from "@/lib/session";
+import { AttachmentsPanel } from "@/components/AttachmentsPanel";
 import { block, brief, save, worker } from "../actions";
 
 export const metadata = { title: "Fremdfirma" };
@@ -77,6 +78,7 @@ export default async function ContractorDetail({ params }: { params: Promise<{ i
           </section>
         </>
       )}
+      <AttachmentsPanel ctx={ctx} entityType="CONTRACTOR" entityId={c.id} back={`/contractors/${c.id}`} title="Unterlagen" hint="Haftpflichtnachweis, Qualifikationsnachweise, Einweisungsprotokolle." />
     </div>
   );
 }

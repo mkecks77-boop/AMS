@@ -97,6 +97,8 @@ const LABELS: Record<string, string> = {
   "permit.closed": "Erlaubnisschein abgeschlossen",
   "legal.created": "Rechtsanforderung angelegt",
   "legal.evaluated": "Rechtsanforderung bewertet",
+  "file.uploaded": "Datei hochgeladen",
+  "file.deleted": "Datei gelöscht",
 };
 
 export default async function AuditPage() {

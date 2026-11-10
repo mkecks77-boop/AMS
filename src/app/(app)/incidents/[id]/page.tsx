@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { formatDate, toInputDate, toInputDateTime } from "@/lib/dates";
 import { CAUSE_LABELS, INCIDENT_STATUS_LABELS, INCIDENT_TYPE_LABELS, isReportable, reportDueDate } from "@/lib/incidents";
 import { requireOrg } from "@/lib/session";
+import { AttachmentsPanel } from "@/components/AttachmentsPanel";
 import { saveIncident } from "../actions";
 
 export const metadata = { title: "Meldung" };
@@ -73,6 +74,7 @@ export default async function IncidentDetail({ params }: { params: Promise<{ id:
       </section>
 
       <ActionsPanel organizationId={orgId} actions={i.actions} source={{ incidentId: i.id, sourceType: "INCIDENT" }} back={`/incidents/${i.id}`} canManage={ctx.can("actions.manage")} />
+      <AttachmentsPanel ctx={ctx} entityType="INCIDENT" entityId={i.id} back={`/incidents/${i.id}`} title="Fotos und Dokumente" hint="Unfallstelle, Skizzen, Zeugenaussagen. Keine ärztlichen Unterlagen ablegen." />
     </div>
   );
 }
