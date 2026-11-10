@@ -44,6 +44,7 @@ export const ENTITY_TYPES: Record<string, { label: string; view: Permission; edi
   RISK: { label: "Gefährdungsbeurteilung", view: "risk.view", edit: "risk.manage", exists: async (o, id) => !!(await db.riskAssessment.count({ where: { id, organizationId: o } })), href: (id) => `/risk/${id}` },
   CONTRACTOR: { label: "Fremdfirma", view: "contractors.view", edit: "contractors.manage", exists: async (o, id) => !!(await db.contractor.count({ where: { id, organizationId: o } })), href: (id) => `/contractors/${id}` },
   EMPLOYEE: { label: "Mitarbeiter/in (Zertifikate)", view: "trainings.view", edit: "trainings.manage", exists: async (o, id) => !!(await db.employee.count({ where: { id, organizationId: o } })), href: (id) => `/employees/${id}` },
+  DRILL: { label: "Notfallübung", view: "emergency.view", edit: "emergency.manage", exists: async (o, id) => !!(await db.drill.count({ where: { id, organizationId: o } })), href: (id) => `/emergency/drills/${id}` },
   ACTION: { label: "Maßnahme (Nachweis)", view: "actions.view", edit: "actions.manage", exists: async (o, id) => !!(await db.action.count({ where: { id, organizationId: o } })), href: (id) => `/actions/${id}` },
 };
 

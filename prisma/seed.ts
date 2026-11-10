@@ -337,6 +337,19 @@ async function main() {
     }
   }
 
+  // Alarmplan und Räumungsübung für Muster Metallbau
+  if ((await db.emergencyPlan.count({ where: { organizationId: org.id } })) === 0) {
+    const now = new Date();
+    const werk = await db.site.findFirstOrThrow({ where: { organizationId: org.id, name: "Werk Nord" } });
+    await db.emergencyPlan.create({ data: {
+      organizationId: org.id, siteId: werk.id, internalEmergency: "Pforte 222", fireBrigade: "112", poisonCenter: "030 19240",
+      dArzt: "Dr. Beispiel, Unfallchirurgie, Hauptstr. 5, Tel. 0123 9876", assemblyPoint: "Parkplatz vor Halle 1 (Sammelplatzschild)",
+      evacuationHelpers: "Max Meister (Halle 1), Tom Dreher (Werkstatt)", firstAidRooms: "Meisterbüro Halle 1", aedLocations: "Eingang Verwaltung",
+      alarmSignal: "Dauerton Sirene", reviewedAt: addMonths(now, -11), reviewDue: addMonths(now, 1),
+    } });
+    await db.drill.create({ data: { organizationId: org.id, siteId: werk.id, kind: "EVACUATION", plannedAt: addMonths(now, -10), performedAt: addMonths(now, -10), participants: 38, evacuationMinutes: 4, observations: "Räumung zügig, Sirene in Halle 2 schlecht hörbar – optischer Alarm empfohlen." } });
+  }
+
   console.log("Demodaten angelegt. Passwort: Demo-Passwort1");
 }
 

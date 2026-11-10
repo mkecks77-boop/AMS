@@ -5,7 +5,7 @@ Online-Werkzeug für Fachkräfte für Arbeitssicherheit (intern und extern) – 
 
 Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 
-## Stand: Phasen 1–9 umgesetzt
+## Stand: Phasen 1–10 umgesetzt
 
 | Bereich | Umfang |
 |---|---|
@@ -47,6 +47,7 @@ Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 | Erlaubnisscheine | Heißarbeiten, enge Räume, Absturz, Elektro, Erdarbeiten: Antrag → Genehmigung im Vier-Augen-Prinzip (prüft Sperre, Haftpflicht, Einweisungen) → Freigabe vor Ort mit Checkliste → Abschluss mit Brandwache (≥ 30 min); max. 24 h; Ausdruck |
 | Rechtskataster | Grundbestand von 23 Pflichten (ArbSchG, ASiG, DGUV V1/V2/V3, BetrSichV, GefStoffV, ArbMedVV …), Bewertung mit Nachweis, Erfüllungsgrad, Maßnahmen für Lücken, jährliche Wiedervorlage |
 | Dateien | Anhänge an Gefahrstoffen (SDB), Anlagen, Unfällen, Begehungen (Fotos vom Handy), GBU, Fremdfirmen, Mitarbeitenden (Zertifikate) und Maßnahmen (Nachweise); PDF/Bilder/Word/Excel bis 15 MB mit Inhaltsprüfung; Download nur mit Leserecht im eigenen Unternehmen; Ablage lokal oder S3-kompatibel (EU) |
+| Brandschutz & Notfall | Alarmplan je Standort (Notrufe, Sammelplatz, D-Arzt, AED, Räumungshelfer) mit jährlicher Überprüfung und druckbarem Aushang; Räumungs-, Lösch- und Erste-Hilfe-Übungen (auch unangekündigt) mit Auswertung, Räumungszeit, Fotos und Maßnahmen; nächste Übung je Standort im Fristenkalender |
 | Navigation | Gruppierte Menüs (Ereignisse, Gefährdungen, Betrieb, Personal, Sifa, Verwaltung), „Melden“ immer sichtbar |
 | Dashboard | Überfällige und bald fällige Fristen, gesperrte Anlagen, offene Gefahrstoff-Anträge, BA zur Freigabe, Gefahrstoffe ohne gültige BA, Unterweisungsquote, Quotenlücken, Tage ohne Ausfallunfall, offene Meldungen, überfällige Maßnahmen |
 

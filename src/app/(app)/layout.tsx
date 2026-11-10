@@ -23,6 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { label: "Betrieb", items: [
       ...item("/equipment", "Anlagen & Maschinen", ctx.can("equipment.view")),
       ...item("/ppe", "PSA", ctx.can("ppe.view")),
+      ...item("/emergency", "Brandschutz & Notfall", ctx.can("emergency.view")),
       ...item("/contractors", "Fremdfirmen", ctx.can("contractors.view")),
       ...item("/permits", "Erlaubnisscheine", ctx.can("permits.request")),
     ] },

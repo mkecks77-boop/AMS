@@ -5,6 +5,7 @@ import { isRequired } from "./trainings";
 import { INCIDENT_TYPE_LABELS, reportDueDate } from "./incidents";
 import { APPOINTMENT_ROLES } from "./appointments";
 import { nextAsaDue } from "./asa";
+import { DRILL_KIND_LABELS, drillStatus } from "./emergency";
 
 /**
  * Einheitliche Frist aus beliebigem Modul (Standortfilter: Prüfungen über die Anlage,
@@ -13,7 +14,7 @@ import { nextAsaDue } from "./asa";
  */
 export interface Deadline {
   id: string;
-  source: "inspection" | "sds" | "instruction" | "training" | "qualification" | "action" | "bg_report" | "risk" | "walkthrough" | "ppe" | "appointment" | "asa" | "medical" | "contractor" | "legal";
+  source: "inspection" | "sds" | "instruction" | "training" | "qualification" | "action" | "bg_report" | "risk" | "walkthrough" | "ppe" | "appointment" | "asa" | "medical" | "contractor" | "legal" | "emergency";
   sourceLabel: string;
   title: string;
   subject: string;
@@ -357,6 +358,25 @@ async function legalDeadlines(organizationId: string, f: DeadlineFilter, now: Da
   }));
 }
 
+/** Notfall: Übungen je Standort, Überprüfung des Alarmplans, fehlender Alarmplan */
+async function emergencyDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  // nur wenn das Modul genutzt wird (mindestens ein Alarmplan oder eine Übung)
+  const used = (await db.emergencyPlan.count({ where: { organizationId } })) + (await db.drill.count({ where: { organizationId } }));
+  if (!used) return [];
+  const out: Deadline[] = [];
+  for (const s of await drillStatus(organizationId, now)) {
+    if (f.siteId && s.site.id !== f.siteId) continue;
+    if (!f.until || s.nextDue <= f.until) {
+      out.push({ id: `drill-${s.site.id}`, source: "emergency", sourceLabel: "Notfall", title: s.planned ? DRILL_KIND_LABELS[s.planned.kind] : "Räumungsübung durchführen", subject: s.site.name, dueAt: s.nextDue, status: classifyDue(s.nextDue, now), siteId: s.site.id, siteName: s.site.name, href: "/emergency" });
+    }
+    const planDue = s.plan?.reviewDue ?? now;
+    if (!f.until || planDue <= f.until) {
+      out.push({ id: `plan-${s.site.id}`, source: "emergency", sourceLabel: "Notfall", title: s.plan ? "Alarmplan überprüfen" : "Alarmplan erstellen", subject: s.site.name, dueAt: planDue, status: classifyDue(planDue, now), siteId: s.site.id, siteName: s.site.name, href: "/emergency" });
+    }
+  }
+  return out;
+}
+
 export async function getDeadlines(organizationId: string, f: DeadlineFilter = {}, now = new Date()) {
   const parts = await Promise.all([
     inspectionDeadlines(organizationId, f, now),
@@ -374,6 +394,7 @@ export async function getDeadlines(organizationId: string, f: DeadlineFilter = {
     medicalDeadlines(organizationId, f, now),
     contractorDeadlines(organizationId, f, now),
     legalDeadlines(organizationId, f, now),
+    emergencyDeadlines(organizationId, f, now),
   ]);
   const all = parts.flat();
   return all

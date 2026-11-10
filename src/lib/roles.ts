@@ -64,7 +64,10 @@ export type Permission =
   /** Erlaubnisschein genehmigen / freigeben / abschließen */
   | "permits.approve"
   | "legal.view"
-  | "legal.manage";
+  | "legal.manage"
+  /** Alarmplan einsehen – alle Beschäftigten */
+  | "emergency.view"
+  | "emergency.manage";
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ORG_ADMIN: [
@@ -77,6 +80,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "risk.view", "risk.manage", "walkthroughs.view", "walkthroughs.manage", "ppe.view", "ppe.manage", "appointments.view", "appointments.manage",
     "asa.view", "asa.manage", "reports.view",
     "medical.view", "medical.manage", "contractors.view", "contractors.manage", "permits.request", "permits.approve", "legal.view", "legal.manage",
+    "emergency.view", "emergency.manage",
   ],
   SAFETY_OFFICER: [
     "audit.view", "dashboard.view", "masterdata.manage", "masterdata.view",
@@ -88,6 +92,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "risk.view", "risk.manage", "walkthroughs.view", "walkthroughs.manage", "ppe.view", "ppe.manage", "appointments.view", "appointments.manage",
     "asa.view", "asa.manage", "time.log", "reports.view",
     "medical.view", "medical.manage", "contractors.view", "contractors.manage", "permits.request", "permits.approve", "legal.view", "legal.manage",
+    "emergency.view", "emergency.manage",
   ],
   MANAGER: [
     "dashboard.view", "masterdata.view", "equipment.view", "equipment.manage",
@@ -97,9 +102,10 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "incidents.report", "incidents.view", "incidents.manage", "actions.view", "actions.manage",
     "risk.view", "risk.manage", "walkthroughs.view", "walkthroughs.manage", "ppe.view", "ppe.manage", "appointments.view", "asa.view",
     "medical.view", "contractors.view", "contractors.manage", "permits.request", "permits.approve", "legal.view",
+    "emergency.view", "emergency.manage",
   ],
-  INSPECTOR: ["dashboard.view", "equipment.view", "inspections.record", "deadlines.view", "substances.view", "instructions.view", "incidents.report", "actions.view", "risk.view", "walkthroughs.view", "walkthroughs.manage", "contractors.view", "permits.request"],
-  EMPLOYEE: ["dashboard.view", "equipment.view", "substances.view", "instructions.view", "incidents.report", "risk.view"],
+  INSPECTOR: ["dashboard.view", "equipment.view", "inspections.record", "deadlines.view", "substances.view", "instructions.view", "incidents.report", "actions.view", "risk.view", "walkthroughs.view", "walkthroughs.manage", "contractors.view", "permits.request", "emergency.view"],
+  EMPLOYEE: ["dashboard.view", "equipment.view", "substances.view", "instructions.view", "incidents.report", "risk.view", "emergency.view"],
 };
 
 export interface AccessContext {
