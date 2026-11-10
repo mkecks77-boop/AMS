@@ -5,7 +5,7 @@ Online-Werkzeug für Fachkräfte für Arbeitssicherheit (intern und extern) – 
 
 Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 
-## Stand: Phase 1–4
+## Stand: Phase 1–5
 
 | Bereich | Umfang |
 |---|---|
@@ -28,7 +28,12 @@ Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 | Unterweisungen & Schulungen | Themen mit Intervall und Zielgruppe (Abteilungen, alle, nur Azubis), Erfassung durchgeführter Unterweisungen mit Teilnehmenden, Azubis automatisch halbjährlich (JArbSchG § 29), Unterweisung direkt aus einer Betriebsanweisung, druckbarer Unterweisungsnachweis mit Unterschriftenliste |
 | Schulungsmatrix | Beschäftigte × Pflichtthemen mit Ampel und Erfüllungsquote, Filter nach Standort/Abteilung |
 | Qualifikationen | Ersthelfer, Brandschutzhelfer, Staplerschein, Kran, EuP … mit Ablaufdatum; Quote je Standort (DGUV V1 § 26, ASR A2.2) |
-| Dashboard | Überfällige und bald fällige Fristen, gesperrte Anlagen, offene Gefahrstoff-Anträge, BA zur Freigabe, Gefahrstoffe ohne gültige BA, Unterweisungsquote, Quotenlücken |
+| Melden | Für alle Beschäftigten: Arbeitsunfall, Wegeunfall, Beinaheunfall, unsicherer Zustand – oder Verbandbucheintrag |
+| Unfälle & Ereignisse | Fortlaufende Nummer je Jahr, Untersuchung mit Ursachenkategorie und 5-Why, Meldepflicht (> 3 Tage AU / tödlich) mit 3-Tage-Frist, Unfallanzeige als vorbereiteter Ausdruck, Abschluss nur mit Ursache, Anzeige und erledigten Maßnahmen |
+| Verbandbuch | Nach DGUV V1 § 24, nur für Admin/Sifa sichtbar, keine Gesundheitsdaten im Protokoll, automatische Löschung nach 5 Jahren, Umwandlung in Unfallmeldung, Druckansicht |
+| Maßnahmen | Zentraler Pool (Quelle, STOP-Art, Priorität, Verantwortliche, Frist), Statusablauf mit Wirksamkeitsprüfung, Verlauf, Umsetzungsquote |
+| Unfallkennzahlen | Unfälle, meldepflichtige, Ausfalltage, 1000-Mann-Quote, Beinaheunfälle, Verlauf nach Monat, Vorjahresvergleich |
+| Dashboard | Überfällige und bald fällige Fristen, gesperrte Anlagen, offene Gefahrstoff-Anträge, BA zur Freigabe, Gefahrstoffe ohne gültige BA, Unterweisungsquote, Quotenlücken, Tage ohne Ausfallunfall, offene Meldungen, überfällige Maßnahmen |
 
 E-Mail-Versand folgt später – bis dahin wird der Einladungslink angezeigt und vom Admin weitergegeben.
 

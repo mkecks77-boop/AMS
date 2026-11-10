@@ -9,9 +9,7 @@ import { getMatrix, quotaReport } from "@/lib/trainings";
 export const metadata = { title: "Übersicht" };
 
 const PLANNED = [
-  "Arbeitsunfälle & Verbandbuch",
   "Gefährdungsbeurteilungen",
-  "Maßnahmen",
 ];
 
 export default async function Dashboard() {
@@ -24,6 +22,12 @@ export default async function Dashboard() {
   const matrix = ctx.can("trainings.view") ? await getMatrix(orgId) : null;
   const quota = ctx.can("trainings.view") ? await quotaReport(orgId) : [];
   const quotaGaps = quota.filter((q) => q.firstAid < q.firstAidRequired || q.fireWarden < q.fireWardenRequired).length;
+  const [openIncidents, overdueActions, lastAccident] = await Promise.all([
+    ctx.can("incidents.view") ? db.incident.count({ where: { organizationId: orgId, status: { not: "CLOSED" } } }) : 0,
+    ctx.can("actions.view") ? db.action.count({ where: { organizationId: orgId, status: { in: ["OPEN", "IN_PROGRESS"] }, dueDate: { lt: new Date() } } }) : 0,
+    ctx.can("incidents.view") ? db.incident.findFirst({ where: { organizationId: orgId, type: "ACCIDENT", lostDays: { gt: 0 } }, orderBy: { occurredAt: "desc" } }) : null,
+  ]);
+  const daysWithout = lastAccident ? Math.floor((Date.now() - lastAccident.occurredAt.getTime()) / 86400000) : null;
   const [requested, baInReview, missingBa, members, equipmentCount, locked, deadlines] = await Promise.all([
     ctx.can("substances.approve") ? db.hazardousSubstance.count({ where: { organizationId: orgId, status: "REQUESTED" } }) : 0,
     ctx.can("instructions.release") ? db.operatingInstruction.count({ where: { organizationId: orgId, status: "IN_REVIEW" } }) : 0,
@@ -43,6 +47,9 @@ export default async function Dashboard() {
     { label: "Fällig in 30 Tagen", value: counts.due30, href: "/deadlines?status=due30", show: showDeadlines },
     { label: "Gesperrte Anlagen", value: locked.length, href: "/equipment?status=LOCKED", alert: locked.length > 0, show: true },
     { label: "Anlagen in Betrieb", value: equipmentCount, href: "/equipment", show: true },
+    { label: "Tage ohne Ausfallunfall", value: daysWithout ?? "–", href: "/incidents/stats", show: ctx.can("incidents.view") },
+    { label: "Offene Meldungen", value: openIncidents, href: "/incidents?open=1", alert: openIncidents > 0, show: ctx.can("incidents.view") },
+    { label: "Überfällige Maßnahmen", value: overdueActions, href: "/actions?overdue=1", alert: overdueActions > 0, show: ctx.can("actions.view") },
     { label: "Gefahrstoff-Anträge", value: requested, href: "/substances?status=REQUESTED", alert: requested > 0, show: ctx.can("substances.approve") },
     { label: "BA zur Freigabe", value: baInReview, href: "/instructions?status=IN_REVIEW", show: ctx.can("instructions.release") },
     { label: "Gefahrstoffe ohne gültige BA", value: missingBa, href: "/substances", alert: missingBa > 0, show: ctx.can("instructions.edit") },

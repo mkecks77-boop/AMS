@@ -200,6 +200,41 @@ async function main() {
     });
   }
 
+  // Unfälle, Verbandbuch, Maßnahmen für Muster Metallbau
+  if ((await db.incident.count({ where: { organizationId: org.id } })) === 0) {
+    const now = new Date();
+    const y = now.getUTCFullYear();
+    const sifa = await db.user.findUniqueOrThrow({ where: { email: "sifa@example.com" } });
+    const werk = await db.site.findFirstOrThrow({ where: { organizationId: org.id, name: "Werk Nord" } });
+    const lager = await db.site.findFirstOrThrow({ where: { organizationId: org.id, name: "Lager Süd" } });
+    const by = async (n: string) => db.employee.findFirstOrThrow({ where: { organizationId: org.id, lastName: n } });
+    const dreher = await by("Dreher"), lagerE = await by("Lager"), meister = await by("Meister");
+    const daysAgo = (n: number) => new Date(now.getTime() - n * 86400000);
+    const i1 = await db.incident.create({ data: {
+      organizationId: org.id, number: `${y}-001`, type: "ACCIDENT", occurredAt: daysAgo(60), siteId: werk.id, location: "Halle 1, M-001", employeeId: dreher.id,
+      activity: "Werkstückwechsel an der CNC-Drehmaschine", description: "Beim Entfernen von Spänen mit der Hand Schnittverletzung am Zeigefinger.",
+      injury: "Schnittwunde", bodyPart: "rechter Zeigefinger", firstAider: "Max Meister", doctorVisit: true, lostDays: 5, reportedToBgAt: daysAgo(58),
+      causeCategory: "PERSONAL", rootCause: "Späne mit der Hand entfernt – Spänehaken nicht griffbereit, Unterweisung lag 11 Monate zurück.", status: "INVESTIGATING", reporterId: sifa.id,
+    } });
+    await db.incident.create({ data: {
+      organizationId: org.id, number: `${y}-002`, type: "NEAR_MISS", occurredAt: daysAgo(20), siteId: lager.id, location: "Halle 2, Gang 3", employeeId: lagerE.id,
+      description: "Stapler beim Rückwärtsfahren – Fußgänger konnte gerade noch ausweichen.", reporterId: sifa.id,
+    } });
+    await db.incident.create({ data: {
+      organizationId: org.id, number: `${y}-003`, type: "ACCIDENT", occurredAt: daysAgo(2), siteId: lager.id, location: "Rampe 1", employeeId: lagerE.id,
+      description: "Beim Abstieg von der Ladebrücke umgeknickt.", injury: "Distorsion", bodyPart: "linkes Sprunggelenk", lostDays: 7, reporterId: sifa.id,
+    } });
+    await db.action.createMany({ data: [
+      { organizationId: org.id, title: "Spänehaken an jeder Drehmaschine fest anbringen", level: "TECHNICAL", priority: "HIGH", responsibleId: meister.id, dueDate: daysAgo(30), status: "DONE", completedAt: daysAgo(35), sourceType: "INCIDENT", incidentId: i1.id, createdById: sifa.id },
+      { organizationId: org.id, title: "Unterweisung CNC: Späne nur mit Spänehaken entfernen", level: "ORGANIZATIONAL", priority: "MEDIUM", responsibleId: meister.id, dueDate: daysAgo(5), sourceType: "INCIDENT", incidentId: i1.id, createdById: sifa.id },
+      { organizationId: org.id, title: "Verkehrswege Halle 2: Fußgängerwege markieren", level: "TECHNICAL", priority: "HIGH", responsibleId: lagerE.id, dueDate: daysAgo(-20), sourceType: "OTHER", createdById: sifa.id },
+    ] });
+    await db.firstAidEntry.createMany({ data: [
+      { organizationId: org.id, occurredAt: daysAgo(15), siteId: werk.id, location: "Halle 1", employeeId: dreher.id, description: "Metallsplitter beim Entgraten", injury: "Splitter im Daumen", measures: "Splitter entfernt, Pflaster", firstAider: "Max Meister" },
+      { organizationId: org.id, occurredAt: daysAgo(4), siteId: lager.id, location: "Kommissionierung", employeeId: lagerE.id, description: "Papierschnitt beim Öffnen eines Kartons", injury: "Schnitt Handfläche", measures: "gereinigt, Pflaster", firstAider: "Tom Dreher" },
+    ] });
+  }
+
   console.log("Demodaten angelegt. Passwort: Demo-Passwort1");
 }
 

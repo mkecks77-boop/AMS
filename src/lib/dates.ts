@@ -45,3 +45,25 @@ export function parseDate(value: string): Date | null {
 export function toInputDate(d: Date | null | undefined): string {
   return d ? d.toISOString().slice(0, 10) : "";
 }
+
+/** "2026-11-09T14:30" → Date (als UTC-Wandzeit gespeichert, Anzeige ebenfalls in UTC) */
+export function parseDateTime(value: string): Date | null {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return parseDate(value);
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return null;
+  const d = new Date(`${value}:00Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export function formatDateTime(d: Date | null | undefined): string {
+  return d ? d.toLocaleString("de-DE", { timeZone: "UTC", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "–";
+}
+
+export function toInputDateTime(d: Date | null | undefined): string {
+  return d ? d.toISOString().slice(0, 16) : "";
+}
+
+/** aktuelle Wandzeit als UTC-Wert (passend zu parseDateTime) */
+export function nowWallClock(tz = "Europe/Berlin"): Date {
+  const p = new Intl.DateTimeFormat("sv-SE", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+  return new Date(p.replace(" ", "T") + ":00Z");
+}

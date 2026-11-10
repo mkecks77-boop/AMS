@@ -2,6 +2,7 @@ import { db } from "./db";
 import { classifyDue, type DueStatus } from "./dates";
 import { INACTIVE_STATUSES } from "./equipment";
 import { isRequired } from "./trainings";
+import { INCIDENT_TYPE_LABELS, reportDueDate } from "./incidents";
 
 /**
  * Einheitliche Frist aus beliebigem Modul (Standortfilter: Prüfungen über die Anlage,
@@ -10,7 +11,7 @@ import { isRequired } from "./trainings";
  */
 export interface Deadline {
   id: string;
-  source: "inspection" | "sds" | "instruction" | "training" | "qualification";
+  source: "inspection" | "sds" | "instruction" | "training" | "qualification" | "action" | "bg_report";
   sourceLabel: string;
   title: string;
   subject: string;
@@ -179,6 +180,60 @@ async function qualificationDeadlines(organizationId: string, f: DeadlineFilter,
   return out;
 }
 
+/** Offene Maßnahmen (Standort über die verknüpfte Meldung) */
+async function actionDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  const list = await db.action.findMany({
+    where: {
+      organizationId,
+      status: { in: ["OPEN", "IN_PROGRESS"] },
+      ...(f.until ? { dueDate: { lte: f.until } } : {}),
+      ...(f.siteId ? { OR: [{ incident: { siteId: f.siteId } }, { responsible: { siteId: f.siteId } }] } : {}),
+    },
+    include: { responsible: true, incident: { include: { site: true } } },
+  });
+  return list.map((a) => ({
+    id: a.id,
+    source: "action",
+    sourceLabel: "Maßnahme",
+    title: a.title,
+    subject: a.responsible ? `verantwortlich: ${a.responsible.firstName} ${a.responsible.lastName}` : "ohne Verantwortliche/n",
+    dueAt: a.dueDate,
+    status: classifyDue(a.dueDate, now),
+    siteId: a.incident?.siteId ?? null,
+    siteName: a.incident?.site?.name ?? null,
+    href: `/actions/${a.id}`,
+  }));
+}
+
+/** Unfallanzeige an die BG (3-Tage-Frist), solange nicht erstattet */
+async function bgReportDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  const list = await db.incident.findMany({
+    where: {
+      organizationId,
+      type: { in: ["ACCIDENT", "COMMUTING"] },
+      reportedToBgAt: null,
+      OR: [{ lostDays: { gt: 3 } }, { fatal: true }],
+      ...(f.siteId ? { siteId: f.siteId } : {}),
+    },
+    include: { site: true },
+  });
+  return list
+    .map((i) => ({ i, due: reportDueDate(i) }))
+    .filter(({ due }) => !f.until || due <= f.until)
+    .map(({ i, due }) => ({
+      id: i.id,
+      source: "bg_report" as const,
+      sourceLabel: "Unfallanzeige",
+      title: `Unfallanzeige an die BG (Nr. ${i.number})`,
+      subject: i.injury ?? INCIDENT_TYPE_LABELS[i.type],
+      dueAt: due,
+      status: classifyDue(due, now),
+      siteId: i.siteId,
+      siteName: i.site?.name ?? null,
+      href: `/incidents/${i.id}`,
+    }));
+}
+
 export async function getDeadlines(organizationId: string, f: DeadlineFilter = {}, now = new Date()) {
   const parts = await Promise.all([
     inspectionDeadlines(organizationId, f, now),
@@ -186,6 +241,8 @@ export async function getDeadlines(organizationId: string, f: DeadlineFilter = {
     instructionDeadlines(organizationId, f, now),
     trainingDeadlines(organizationId, f, now),
     qualificationDeadlines(organizationId, f, now),
+    actionDeadlines(organizationId, f, now),
+    bgReportDeadlines(organizationId, f, now),
   ]);
   const all = parts.flat();
   return all

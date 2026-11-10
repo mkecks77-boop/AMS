@@ -27,47 +27,50 @@ enum Role {
 
 /// Unternehmen = Mandant
 model Organization {
-  id          String       @id @default(cuid())
-  name        String
+  id                 String                 @id @default(cuid())
+  name               String
   /// Kurzname für URLs und Anzeige, eindeutig
-  slug        String       @unique
-  active      Boolean      @default(true)
-  memberships Membership[]
-  invitations Invitation[]
-  auditLogs   AuditLog[]
-  sites       Site[]
-  departments Department[]
-  employees   Employee[]
-  equipment   Equipment[]
-  substances  HazardousSubstance[]
-  instructions OperatingInstruction[]
+  slug               String                 @unique
+  active             Boolean                @default(true)
+  memberships        Membership[]
+  invitations        Invitation[]
+  auditLogs          AuditLog[]
+  sites              Site[]
+  departments        Department[]
+  employees          Employee[]
+  equipment          Equipment[]
+  substances         HazardousSubstance[]
+  instructions       OperatingInstruction[]
   trainingTopics     TrainingTopic[]
   qualificationTypes QualificationType[]
+  incidents          Incident[]
+  firstAidEntries    FirstAidEntry[]
+  actions            Action[]
   /// Ersthelferquote in Prozent (DGUV V1 § 26: 5 % Verwaltung/Handel, 10 % sonstige Betriebe)
-  firstAidRate       Int          @default(10)
+  firstAidRate       Int                    @default(10)
   /// Brandschutzhelferquote in Prozent (ASR A2.2: in der Regel 5 %)
-  fireWardenRate     Int          @default(5)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  fireWardenRate     Int                    @default(5)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
 }
 
 model User {
-  id              String       @id @default(cuid())
-  email           String       @unique
+  id              String          @id @default(cuid())
+  email           String          @unique
   name            String
   /// null, solange die Einladung nicht angenommen wurde
   passwordHash    String?
   /// Betreiber der Plattform: legt Unternehmen an
-  isPlatformAdmin Boolean      @default(false)
-  active          Boolean      @default(true)
+  isPlatformAdmin Boolean         @default(false)
+  active          Boolean         @default(true)
   lastLoginAt     DateTime?
   memberships     Membership[]
   sessions        Session[]
   passwordResets  PasswordReset[]
-  invitationsSent Invitation[] @relation("InvitedBy")
+  invitationsSent Invitation[]    @relation("InvitedBy")
   auditLogs       AuditLog[]
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 }
 
 /// Zugehörigkeit einer Person zu einem Unternehmen mit Rolle.
@@ -152,61 +155,66 @@ model PasswordReset {
 // ───────────── Phase 2: Stammdaten, Anlagen, Prüfungen ─────────────
 
 model Site {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name           String
-  address        String?
-  active         Boolean      @default(true)
-  departments    Department[]
-  employees      Employee[]
-  equipment      Equipment[]
-  substanceUses  SubstanceUse[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id              String          @id @default(cuid())
+  organizationId  String
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name            String
+  address         String?
+  active          Boolean         @default(true)
+  departments     Department[]
+  employees       Employee[]
+  equipment       Equipment[]
+  incidents       Incident[]
+  firstAidEntries FirstAidEntry[]
+  substanceUses   SubstanceUse[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@unique([organizationId, name])
 }
 
 model Department {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  siteId         String?
-  site           Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
-  name           String
-  active         Boolean      @default(true)
-  employees      Employee[]
+  id                   String                @id @default(cuid())
+  organizationId       String
+  organization         Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  siteId               String?
+  site                 Site?                 @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  name                 String
+  active               Boolean               @default(true)
+  employees            Employee[]
   trainingRequirements TrainingRequirement[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
 
   @@unique([organizationId, name])
 }
 
 /// Mitarbeiterstamm – auch Personen ohne Login (für Unterweisungen, Qualifikationen, Verantwortung)
 model Employee {
-  id                   String       @id @default(cuid())
+  id                   String           @id @default(cuid())
   organizationId       String
-  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization         Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   personnelNumber      String?
   firstName            String
   lastName             String
   jobTitle             String?
   siteId               String?
-  site                 Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  site                 Site?            @relation(fields: [siteId], references: [id], onDelete: SetNull)
   departmentId         String?
-  department           Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  department           Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   /// Auszubildende/r (JArbSchG, halbjährliche Unterweisung)
-  apprentice           Boolean      @default(false)
+  apprentice           Boolean          @default(false)
   entryDate            DateTime?
   exitDate             DateTime?
-  active               Boolean      @default(true)
+  active               Boolean          @default(true)
   responsibleEquipment Equipment[]
   trainingRecords      TrainingRecord[]
+  incidents            Incident[]
+  firstAidEntries      FirstAidEntry[]
+  responsibleActions   Action[]
   qualifications       Qualification[]
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
   @@unique([organizationId, personnelNumber])
   @@index([organizationId, lastName])
@@ -222,32 +230,32 @@ enum EquipmentStatus {
 
 /// Anlage, Maschine oder Arbeitsmittel
 model Equipment {
-  id                  String                @id @default(cuid())
-  organizationId      String
-  organization        Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  inventoryNumber     String
-  name                String
-  category            String
-  manufacturer        String?
-  model               String?
-  serialNumber        String?
-  yearBuilt           Int?
-  ceMarked            Boolean               @default(false)
-  hasDeclarationOfConformity Boolean        @default(false)
-  hasOperatingManual  Boolean               @default(false)
-  commissionedAt      DateTime?
-  siteId              String?
-  site                Site?                 @relation(fields: [siteId], references: [id], onDelete: SetNull)
-  location            String?
-  responsibleId       String?
-  responsible         Employee?             @relation(fields: [responsibleId], references: [id], onDelete: SetNull)
-  status              EquipmentStatus       @default(ACTIVE)
-  notes               String?
-  obligations         InspectionObligation[]
-  statusChanges       EquipmentStatusChange[]
-  instructions        OperatingInstruction[]
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
+  id                         String                  @id @default(cuid())
+  organizationId             String
+  organization               Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inventoryNumber            String
+  name                       String
+  category                   String
+  manufacturer               String?
+  model                      String?
+  serialNumber               String?
+  yearBuilt                  Int?
+  ceMarked                   Boolean                 @default(false)
+  hasDeclarationOfConformity Boolean                 @default(false)
+  hasOperatingManual         Boolean                 @default(false)
+  commissionedAt             DateTime?
+  siteId                     String?
+  site                       Site?                   @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  location                   String?
+  responsibleId              String?
+  responsible                Employee?               @relation(fields: [responsibleId], references: [id], onDelete: SetNull)
+  status                     EquipmentStatus         @default(ACTIVE)
+  notes                      String?
+  obligations                InspectionObligation[]
+  statusChanges              EquipmentStatusChange[]
+  instructions               OperatingInstruction[]
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
 
   @@unique([organizationId, inventoryNumber])
   @@index([organizationId, status])
@@ -336,9 +344,9 @@ enum SignalWord {
 
 /// Gefahrstoffverzeichnis nach § 6 Abs. 12 GefStoffV
 model HazardousSubstance {
-  id                  String          @id @default(cuid())
+  id                  String                 @id @default(cuid())
   organizationId      String
-  organization        Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization        Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   /// Handelsname / Produktbezeichnung
   name                String
   manufacturer        String?
@@ -347,7 +355,7 @@ model HazardousSubstance {
   usage               String?
   /// GHS01 … GHS09
   pictograms          String[]
-  signalWord          SignalWord      @default(NONE)
+  signalWord          SignalWord             @default(NONE)
   hStatements         String[]
   pStatements         String[]
   /// Lagerklasse nach TRGS 510, z. B. "3", "6.1A", "8B"
@@ -359,17 +367,17 @@ model HazardousSubstance {
   /// nächste Überprüfung auf Aktualität des SDB
   sdsReviewDue        DateTime?
   ppe                 String?
-  substitutionChecked Boolean         @default(false)
+  substitutionChecked Boolean                @default(false)
   substitutionNotes   String?
-  status              SubstanceStatus @default(REQUESTED)
+  status              SubstanceStatus        @default(REQUESTED)
   requestedById       String?
   decidedById         String?
   decidedAt           DateTime?
   decisionNote        String?
   uses                SubstanceUse[]
   instructions        OperatingInstruction[]
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
 
   @@index([organizationId, status])
 }
@@ -486,13 +494,13 @@ model TrainingTopic {
 
 /// Wer braucht das Thema? Abteilung = null bedeutet: alle Beschäftigten
 model TrainingRequirement {
-  id           String        @id @default(cuid())
-  topicId      String
-  topic        TrainingTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  departmentId String?
-  department   Department?   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  id              String        @id @default(cuid())
+  topicId         String
+  topic           TrainingTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  departmentId    String?
+  department      Department?   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   /// nur Auszubildende/Jugendliche
-  apprenticesOnly Boolean    @default(false)
+  apprenticesOnly Boolean       @default(false)
 
   @@unique([topicId, departmentId, apprenticesOnly])
 }
@@ -547,16 +555,156 @@ model QualificationType {
 }
 
 model Qualification {
-  id          String            @id @default(cuid())
-  typeId      String
-  type        QualificationType @relation(fields: [typeId], references: [id], onDelete: Cascade)
-  employeeId  String
-  employee    Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  acquiredAt  DateTime
-  validUntil  DateTime?
-  issuer      String?
-  notes       String?
-  createdAt   DateTime          @default(now())
+  id         String            @id @default(cuid())
+  typeId     String
+  type       QualificationType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  acquiredAt DateTime
+  validUntil DateTime?
+  issuer     String?
+  notes      String?
+  createdAt  DateTime          @default(now())
 
   @@index([employeeId])
+}
+
+// ───────────── Phase 5: Unfälle, Verbandbuch, Maßnahmen ─────────────
+
+enum IncidentType {
+  /// Arbeitsunfall
+  ACCIDENT
+  /// Wegeunfall
+  COMMUTING
+  /// Beinaheunfall
+  NEAR_MISS
+  /// unsicherer Zustand / unsichere Handlung
+  UNSAFE_CONDITION
+}
+
+enum IncidentStatus {
+  OPEN
+  INVESTIGATING
+  CLOSED
+}
+
+enum CauseCategory {
+  TECHNICAL
+  ORGANIZATIONAL
+  PERSONAL
+}
+
+model Incident {
+  id              String         @id @default(cuid())
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// laufende Nummer je Unternehmen und Jahr, z. B. 2026-007
+  number          String
+  type            IncidentType
+  occurredAt      DateTime
+  siteId          String?
+  site            Site?          @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  location        String?
+  employeeId      String?
+  employee        Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  /// falls nicht im Mitarbeiterstamm (z. B. Fremdfirma, Besucher)
+  personName      String?
+  activity        String?
+  description     String
+  injury          String?
+  bodyPart        String?
+  witnesses       String?
+  firstAider      String?
+  doctorVisit     Boolean        @default(false)
+  /// Arbeitsunfähigkeit (Kalendertage, ohne Unfalltag)
+  lostDays        Int            @default(0)
+  fatal           Boolean        @default(false)
+  /// Unfallanzeige erstattet am
+  reportedToBgAt  DateTime?
+  causeCategory   CauseCategory?
+  rootCause       String?
+  status          IncidentStatus @default(OPEN)
+  reporterId      String?
+  firstAidEntryId String?        @unique
+  firstAidEntry   FirstAidEntry? @relation(fields: [firstAidEntryId], references: [id], onDelete: SetNull)
+  actions         Action[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([organizationId, number])
+  @@index([organizationId, occurredAt])
+}
+
+/// Verbandbuch (DGUV Vorschrift 1 § 24 Abs. 6) – Aufbewahrung 5 Jahre
+model FirstAidEntry {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  occurredAt     DateTime
+  siteId         String?
+  site           Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  location       String?
+  employeeId     String?
+  employee       Employee?    @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  personName     String?
+  description    String
+  injury         String
+  measures       String
+  firstAider     String
+  witnesses      String?
+  reporterId     String?
+  incident       Incident?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, occurredAt])
+}
+
+enum ActionStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  /// Wirksamkeit geprüft
+  VERIFIED
+  CANCELLED
+}
+
+enum ActionPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// Maßnahmenart nach STOP-Prinzip
+enum ActionLevel {
+  SUBSTITUTION
+  TECHNICAL
+  ORGANIZATIONAL
+  PERSONAL
+}
+
+/// Zentrale Maßnahme – Quelle: Unfall, Begehung, Gefährdungsbeurteilung, Prüfung …
+model Action {
+  id                String         @id @default(cuid())
+  organizationId    String
+  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title             String
+  description       String?
+  level             ActionLevel?
+  priority          ActionPriority @default(MEDIUM)
+  responsibleId     String?
+  responsible       Employee?      @relation(fields: [responsibleId], references: [id], onDelete: SetNull)
+  dueDate           DateTime
+  status            ActionStatus   @default(OPEN)
+  completedAt       DateTime?
+  effectivenessNote String?
+  verifiedAt        DateTime?
+  /// Herkunft für Anzeige und Link, z. B. "INCIDENT"
+  sourceType        String         @default("OTHER")
+  incidentId        String?
+  incident          Incident?      @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+  createdById       String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([organizationId, status, dueDate])
 }
