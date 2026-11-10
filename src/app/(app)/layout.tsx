@@ -31,6 +31,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       ...item("/appointments", "Beauftragte", ctx.can("appointments.view")),
       ...item("/employees", "Mitarbeiter", ctx.can("masterdata.view")),
     ] },
+    { label: "Sifa", items: [
+      ...item("/asa", "Arbeitsschutzausschuss", ctx.can("asa.view")),
+      ...item("/time", "Einsatzzeit", ctx.can("reports.view")),
+      ...item("/print/annual", "Jahresbericht", ctx.can("reports.view")),
+    ] },
     { label: "Verwaltung", items: [
       ...item("/sites", "Standorte & Abteilungen", ctx.can("masterdata.manage")),
       ...item("/users", "Nutzer", ctx.can("users.manage")),
@@ -66,9 +71,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {ctx.can("incidents.report") && <Link href="/report" className="ml-1 rounded bg-red-600 px-3 py-1 font-medium text-white hover:bg-red-700">Melden</Link>}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm">
-            <span className="text-slate-600">
+            <Link href="/profile" className="text-slate-600 hover:text-[var(--brand)]" title="Profil, Passwort, Zwei-Faktor-Anmeldung">
               {user.name} · {role ? ROLE_LABELS[role] : "Plattform-Admin"}
-            </span>
+            </Link>
             <form action={logout}><button className="btn-secondary">Abmelden</button></form>
           </div>
         </div>

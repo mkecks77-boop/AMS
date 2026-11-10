@@ -5,6 +5,7 @@ import { requireOrg } from "@/lib/session";
 import { isRole } from "@/lib/roles";
 import { createPasswordReset, inviteMember, updateMembership, UserError } from "@/lib/users";
 import { appUrl, str, type FormState } from "@/lib/form";
+import { mailConfigured, sendMail } from "@/lib/mail";
 
 async function actor() {
   const ctx = await requireOrg("users.manage");
@@ -33,9 +34,12 @@ export async function invite(_: FormState, fd: FormData): Promise<FormState> {
     if (res.kind === "added") {
       return { message: "Die Person hat bereits ein Konto und wurde direkt hinzugefügt." };
     }
+    const link = appUrl(`/invite/${res.token}`);
+    const mailed = mailConfigured() && (await sendMail(email, `Einladung zu AMS – ${ctx.organization.name}`,
+      `Sie wurden zum Arbeitsschutzmanagementsystem von ${ctx.organization.name} eingeladen.\n\nKonto anlegen (7 Tage gültig):\n${link}\n`));
     return {
-      message: "Einladung erstellt. Senden Sie diesen Link an die Person (7 Tage gültig):",
-      link: appUrl(`/invite/${res.token}`),
+      message: mailed ? "Einladung per E-Mail versendet. Zusätzlich hier der Link (7 Tage gültig):" : "Einladung erstellt. Senden Sie diesen Link an die Person (7 Tage gültig):",
+      link,
     };
   } catch (e) {
     return handle(e);

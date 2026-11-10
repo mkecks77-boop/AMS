@@ -4,6 +4,7 @@ import { INACTIVE_STATUSES } from "./equipment";
 import { isRequired } from "./trainings";
 import { INCIDENT_TYPE_LABELS, reportDueDate } from "./incidents";
 import { APPOINTMENT_ROLES } from "./appointments";
+import { nextAsaDue } from "./asa";
 
 /**
  * Einheitliche Frist aus beliebigem Modul (Standortfilter: Prüfungen über die Anlage,
@@ -12,7 +13,7 @@ import { APPOINTMENT_ROLES } from "./appointments";
  */
 export interface Deadline {
   id: string;
-  source: "inspection" | "sds" | "instruction" | "training" | "qualification" | "action" | "bg_report" | "risk" | "walkthrough" | "ppe" | "appointment";
+  source: "inspection" | "sds" | "instruction" | "training" | "qualification" | "action" | "bg_report" | "risk" | "walkthrough" | "ppe" | "appointment" | "asa";
   sourceLabel: string;
   title: string;
   subject: string;
@@ -283,6 +284,28 @@ async function appointmentDeadlines(organizationId: string, f: DeadlineFilter, n
   }));
 }
 
+/** ASA-Sitzungen: geplante Termine bzw. Fälligkeit nach § 11 ASiG (vierteljährlich) */
+async function asaDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  if (f.siteId) return [];
+  const [planned, lastDone, any] = await Promise.all([
+    db.asaMeeting.findMany({ where: { organizationId, status: "PLANNED", ...(f.until ? { date: { lte: f.until } } : {}) } }),
+    db.asaMeeting.findFirst({ where: { organizationId, status: "DONE" }, orderBy: { date: "desc" } }),
+    db.asaMeeting.count({ where: { organizationId } }),
+  ]);
+  const out: Deadline[] = planned.map((m) => ({
+    id: m.id, source: "asa", sourceLabel: "ASA-Sitzung", title: "Sitzung des Arbeitsschutzausschusses", subject: m.location ?? "",
+    dueAt: m.date, status: classifyDue(m.date, now), siteId: null, siteName: null, href: `/asa/${m.id}`,
+  }));
+  // nur wenn das ASA-Modul genutzt wird und kein Termin geplant ist
+  if (any > 0 && planned.length === 0) {
+    const due = nextAsaDue(lastDone?.date ?? null, now);
+    if (!f.until || due <= f.until) {
+      out.push({ id: "asa-next", source: "asa", sourceLabel: "ASA-Sitzung", title: "Nächste ASA-Sitzung planen (§ 11 ASiG)", subject: "vierteljährlich", dueAt: due, status: classifyDue(due, now), siteId: null, siteName: null, href: "/asa" });
+    }
+  }
+  return out;
+}
+
 export async function getDeadlines(organizationId: string, f: DeadlineFilter = {}, now = new Date()) {
   const parts = await Promise.all([
     inspectionDeadlines(organizationId, f, now),
@@ -296,6 +319,7 @@ export async function getDeadlines(organizationId: string, f: DeadlineFilter = {
     walkthroughDeadlines(organizationId, f, now),
     ppeDeadlines(organizationId, f, now),
     appointmentDeadlines(organizationId, f, now),
+    asaDeadlines(organizationId, f, now),
   ]);
   const all = parts.flat();
   return all

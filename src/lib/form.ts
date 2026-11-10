@@ -3,6 +3,8 @@ export interface FormState {
   message?: string;
   /** z. B. Einladungslink zum Kopieren */
   link?: string;
+  /** Anmeldung: Zwei-Faktor-Code erforderlich */
+  needCode?: boolean;
 }
 
 export function str(fd: FormData, key: string): string {

@@ -56,7 +56,7 @@ zusätzlich geplant: PostgreSQL Row-Level Security.
 | 4 | Schulungen, Qualifikationen, Unterweisungen | ✅ |
 | 5 | Unfälle, Verbandbuch, Unfallanzeige, Maßnahmen | ✅ |
 | 6 | Gefährdungsbeurteilung, Begehungen, PSA, Beauftragte | ✅ |
-| 7 | ASA-Sitzungen, Tätigkeitsnachweis, Jahresbericht, E-Mail, 2FA, KI-Assistent | |
+| 7 | ASA-Sitzungen, Tätigkeitsnachweis, Jahresbericht, E-Mail, 2FA | ✅ (KI-Assistent zurückgestellt, s. u.) |
 
 ## Offene Punkte aus Phase 3 (für später)
 - Originalgrafiken der GHS- und ISO-7010-Zeichen als Bilddateien (derzeit genormte Form/Farbe mit Code)
@@ -64,3 +64,9 @@ zusätzlich geplant: PostgreSQL Row-Level Security.
 - QR-Code an der Maschine, der die aktuelle BA öffnet
 - Prüfung der Zusammenlagerung nach TRGS 510
 - Unterweisung direkt aus einer BA erzeugen (Phase 4)
+
+## Mögliche Erweiterungen
+- KI-Assistent (Entwürfe für GBU/BA, SDB auslesen) – erfordert Entscheidung zu Anbieter und Datenschutz
+- Arbeitsmedizinische Vorsorge (ArbMedVV), Fremdfirmen & Erlaubnisscheine, Rechtskataster, Brandschutz & Notfall
+- Datei-Uploads (SDB, Zertifikate, Fotos) in EU-Objektspeicher
+- Microsoft-Login (SSO) je Unternehmen, PostgreSQL Row-Level Security als zusätzliche Mandantentrennung

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { verifyPassword } from "@/lib/password";
+import { verifyTotp } from "@/lib/totp";
 import { createSession, destroySession, requireUser } from "@/lib/session";
 import { acceptInvitation, normalizeEmail, resetPassword, UserError } from "@/lib/users";
 import { str, type FormState } from "@/lib/form";
@@ -24,6 +25,11 @@ export async function login(_: FormState, fd: FormData): Promise<FormState> {
   });
   if (!user?.passwordHash || !user.active || !(await verifyPassword(password, user.passwordHash))) {
     return { error: GENERIC };
+  }
+  if (user.totpEnabled && user.totpSecret) {
+    const code = str(fd, "code");
+    if (!code) return { error: "Bitte den 6-stelligen Code aus Ihrer Authenticator-App eingeben.", needCode: true };
+    if (!verifyTotp(user.totpSecret, code)) return { error: "Der Code ist ungültig.", needCode: true };
   }
   const only = user.memberships.length === 1 ? user.memberships[0].organizationId : null;
   await createSession(user.id, only);

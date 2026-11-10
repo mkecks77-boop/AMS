@@ -51,6 +51,10 @@ model Organization {
   walkthroughs       Walkthrough[]
   ppeItems           PpeItem[]
   appointments       Appointment[]
+  asaMeetings        AsaMeeting[]
+  timeEntries        TimeEntry[]
+  /// Soll-Einsatzzeit der Sifa in Stunden pro Jahr (DGUV Vorschrift 2)
+  sifaHoursTarget    Int?
   /// Ersthelferquote in Prozent (DGUV V1 § 26: 5 % Verwaltung/Handel, 10 % sonstige Betriebe)
   firstAidRate       Int                    @default(10)
   /// Brandschutzhelferquote in Prozent (ASR A2.2: in der Regel 5 %)
@@ -74,6 +78,12 @@ model User {
   passwordResets  PasswordReset[]
   invitationsSent Invitation[]    @relation("InvitedBy")
   auditLogs       AuditLog[]
+  /// TOTP-Geheimnis (Base32) für Zwei-Faktor-Anmeldung
+  totpSecret      String?
+  totpEnabled     Boolean      @default(false)
+  /// tägliche/wöchentliche Fristen-E-Mail
+  emailDigest     Boolean      @default(true)
+  timeEntries     TimeEntry[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }
@@ -720,6 +730,8 @@ model Action {
   hazard            Hazard?         @relation(fields: [hazardId], references: [id], onDelete: SetNull)
   walkthroughId     String?
   walkthrough       Walkthrough?    @relation(fields: [walkthroughId], references: [id], onDelete: SetNull)
+  asaMeetingId      String?
+  asaMeeting        AsaMeeting?     @relation(fields: [asaMeetingId], references: [id], onDelete: SetNull)
   createdById       String?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
@@ -918,4 +930,56 @@ model Appointment {
   createdAt      DateTime     @default(now())
 
   @@index([organizationId, role])
+}
+
+// ───────────── Phase 7: ASA, Einsatzzeit, Benachrichtigungen ─────────────
+
+enum MeetingStatus {
+  PLANNED
+  DONE
+}
+
+/// Sitzung des Arbeitsschutzausschusses (§ 11 ASiG – mindestens vierteljährlich)
+model AsaMeeting {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  date           DateTime
+  location       String?
+  participants   String?
+  agenda         String        @default("")
+  minutes        String        @default("")
+  status         MeetingStatus @default(PLANNED)
+  actions        Action[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId, date])
+}
+
+/// Einsatzzeit der Fachkraft für Arbeitssicherheit (Tätigkeitsnachweis, DGUV Vorschrift 2)
+model TimeEntry {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date           DateTime
+  minutes        Int
+  /// Schlüssel aus TIME_CATEGORIES
+  category       String
+  description    String?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, date])
+}
+
+/// Versandprotokoll für E-Mails (auch ohne SMTP: als Ausgang sichtbar)
+model EmailLog {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  sent      Boolean
+  error     String?
+  createdAt DateTime @default(now())
 }

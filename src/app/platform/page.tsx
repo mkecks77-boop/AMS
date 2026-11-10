@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ActionForm } from "@/components/ActionForm";
 import { db } from "@/lib/db";
 import { requirePlatformAdmin } from "@/lib/session";
+import { mailConfigured } from "@/lib/mail";
 import { switchOrganization } from "../actions/auth";
 import { createOrg, toggleOrg } from "./actions";
 
@@ -9,6 +10,7 @@ export const metadata = { title: "Plattform" };
 
 export default async function PlatformPage() {
   await requirePlatformAdmin();
+  const mails = await db.emailLog.findMany({ orderBy: { createdAt: "desc" }, take: 20 });
   const orgs = await db.organization.findMany({
     orderBy: { name: "asc" },
     include: { _count: { select: { memberships: { where: { active: true } } } } },
@@ -56,6 +58,13 @@ export default async function PlatformPage() {
               </tr>
             ))}
           </tbody>
+        </table>
+      </section>
+      <section className="card overflow-x-auto">
+        <h2 className="mb-2 text-lg font-semibold">E-Mail-Versandprotokoll</h2>
+        <p className="mb-3 text-sm text-slate-500">{mailConfigured() ? "SMTP ist konfiguriert." : "SMTP ist nicht konfiguriert (SMTP_URL) – E-Mails werden nur protokolliert."}</p>
+        <table className="w-full text-left text-sm">
+          <tbody>{mails.map((m) => <tr key={m.id} className="border-t border-slate-100"><td className="py-1">{m.createdAt.toLocaleString("de-DE")}</td><td>{m.to}</td><td>{m.subject}</td><td>{m.sent ? "versendet" : <span className="text-amber-700">{m.error}</span>}</td></tr>)}</tbody>
         </table>
       </section>
     </main>
