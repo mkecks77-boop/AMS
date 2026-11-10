@@ -5,7 +5,7 @@ Online-Werkzeug für Fachkräfte für Arbeitssicherheit (intern und extern) – 
 
 Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 
-## Stand: Phase 1–5
+## Stand: Phase 1–6
 
 | Bereich | Umfang |
 |---|---|
@@ -33,6 +33,11 @@ Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 | Verbandbuch | Nach DGUV V1 § 24, nur für Admin/Sifa sichtbar, keine Gesundheitsdaten im Protokoll, automatische Löschung nach 5 Jahren, Umwandlung in Unfallmeldung, Druckansicht |
 | Maßnahmen | Zentraler Pool (Quelle, STOP-Art, Priorität, Verantwortliche, Frist), Statusablauf mit Wirksamkeitsprüfung, Verlauf, Umsetzungsquote |
 | Unfallkennzahlen | Unfälle, meldepflichtige, Ausfalltage, 1000-Mann-Quote, Beinaheunfälle, Verlauf nach Monat, Vorjahresvergleich |
+| Gefährdungsbeurteilung | Nach §§ 5, 6 ArbSchG: Arbeitsplatz/Tätigkeit, psychische Belastung, Mutterschutz; Gefährdungsfaktoren nach GDA; 5×5-Risikomatrix vorher/nachher; Maßnahmen nach STOP; Freigabe nur mit Maßnahmen und bewertetem Restrisiko (nicht „sehr hoch“); jede Änderung setzt auf Entwurf; Überprüfungsfrist; Kopie als Vorlage; Druckansicht |
+| Begehungen | Standard-Checklisten (Betrieb, Büro/Bildschirm) und eigene Checklisten; Planung; Durchführung am Handy (i. O. / Mangel / n. z.); Abschluss nur vollständig mit Mangelbeschreibung; Erfüllungsgrad; Maßnahmen aus Mängeln; Bericht |
+| PSA | Katalog mit Normen und Gebrauchsdauer, Ausgabe mit Größe und Empfangsbestätigung (§ 3 PSA-BV), Austauschfrist, Rückgabe |
+| Beauftragte | Pflichtenübertragung (§ 13 DGUV V1), Sicherheitsbeauftragte, Brandschutz-, Gefahrgut-, Abfall-, Laser-, Strahlenschutzbeauftragte, verantwortliche Elektrofachkraft; Befristung; druckbare Bestellung |
+| Navigation | Gruppierte Menüs (Ereignisse, Gefährdungen, Betrieb, Personal, Verwaltung), „Melden“ immer sichtbar |
 | Dashboard | Überfällige und bald fällige Fristen, gesperrte Anlagen, offene Gefahrstoff-Anträge, BA zur Freigabe, Gefahrstoffe ohne gültige BA, Unterweisungsquote, Quotenlücken, Tage ohne Ausfallunfall, offene Meldungen, überfällige Maßnahmen |
 
 E-Mail-Versand folgt später – bis dahin wird der Einladungslink angezeigt und vom Admin weitergegeben.

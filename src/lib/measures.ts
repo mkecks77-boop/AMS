@@ -58,6 +58,9 @@ export interface ActionInput {
 export interface ActionSource {
   sourceType?: string;
   incidentId?: string | null;
+  riskAssessmentId?: string | null;
+  hazardId?: string | null;
+  walkthroughId?: string | null;
 }
 
 export async function createAction(actor: Actor, organizationId: string, input: ActionInput, source: ActionSource = {}) {
@@ -65,6 +68,15 @@ export async function createAction(actor: Actor, organizationId: string, input: 
   await assertOwned(organizationId, { employeeId: input.responsibleId });
   if (source.incidentId && !(await db.incident.count({ where: { id: source.incidentId, organizationId } }))) {
     throw new UserError("Meldung nicht gefunden.");
+  }
+  if (source.riskAssessmentId && !(await db.riskAssessment.count({ where: { id: source.riskAssessmentId, organizationId } }))) {
+    throw new UserError("Gefährdungsbeurteilung nicht gefunden.");
+  }
+  if (source.hazardId && !(await db.hazard.count({ where: { id: source.hazardId, assessment: { organizationId } } }))) {
+    throw new UserError("Gefährdung nicht gefunden.");
+  }
+  if (source.walkthroughId && !(await db.walkthrough.count({ where: { id: source.walkthroughId, organizationId } }))) {
+    throw new UserError("Begehung nicht gefunden.");
   }
   const a = await db.action.create({
     data: {
@@ -77,7 +89,7 @@ export async function createAction(actor: Actor, organizationId: string, input: 
       dueDate: input.dueDate,
       createdById: actor.userId,
       ...source,
-      sourceType: source.sourceType ?? (source.incidentId ? "INCIDENT" : "OTHER"),
+      sourceType: source.sourceType ?? (source.incidentId ? "INCIDENT" : source.riskAssessmentId ? "RISK" : source.walkthroughId ? "AUDIT" : "OTHER"),
     },
   });
   await audit({ organizationId, userId: actor.userId, action: "action.created", entity: "Action", entityId: a.id, details: { title: a.title } });

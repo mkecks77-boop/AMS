@@ -14,8 +14,9 @@ import { instructionOptions } from "../options";
 export const metadata = { title: "Betriebsanweisung" };
 
 function Step({ id, step, label, note }: { id: string; step: string; label: string; note?: boolean }) {
+  const secondary = step === "withdraw" || step === "return";
   return (
-    <ActionForm action={workflow} submitLabel={label} className="flex flex-wrap items-end gap-2">
+    <ActionForm action={workflow} submitLabel={label} className="flex flex-wrap items-end gap-2" buttonClassName={secondary ? "btn-secondary" : undefined}>
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="step" value={step} />
       {note && <input name="note" placeholder="Hinweis an die Bearbeitung" className="input w-64" />}

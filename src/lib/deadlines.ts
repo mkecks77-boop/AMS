@@ -3,6 +3,7 @@ import { classifyDue, type DueStatus } from "./dates";
 import { INACTIVE_STATUSES } from "./equipment";
 import { isRequired } from "./trainings";
 import { INCIDENT_TYPE_LABELS, reportDueDate } from "./incidents";
+import { APPOINTMENT_ROLES } from "./appointments";
 
 /**
  * Einheitliche Frist aus beliebigem Modul (Standortfilter: Prüfungen über die Anlage,
@@ -11,7 +12,7 @@ import { INCIDENT_TYPE_LABELS, reportDueDate } from "./incidents";
  */
 export interface Deadline {
   id: string;
-  source: "inspection" | "sds" | "instruction" | "training" | "qualification" | "action" | "bg_report";
+  source: "inspection" | "sds" | "instruction" | "training" | "qualification" | "action" | "bg_report" | "risk" | "walkthrough" | "ppe" | "appointment";
   sourceLabel: string;
   title: string;
   subject: string;
@@ -234,6 +235,54 @@ async function bgReportDeadlines(organizationId: string, f: DeadlineFilter, now:
     }));
 }
 
+/** Überprüfung freigegebener Gefährdungsbeurteilungen */
+async function riskDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  const list = await db.riskAssessment.findMany({
+    where: { organizationId, status: "RELEASED", reviewDue: { not: null, ...(f.until ? { lte: f.until } : {}) }, ...(f.siteId ? { siteId: f.siteId } : {}) },
+    include: { site: true },
+  });
+  return list.map((r) => ({
+    id: r.id, source: "risk", sourceLabel: "Gefährdungsbeurteilung", title: "Gefährdungsbeurteilung überprüfen", subject: r.title,
+    dueAt: r.reviewDue!, status: classifyDue(r.reviewDue!, now), siteId: r.siteId, siteName: r.site?.name ?? null, href: `/risk/${r.id}`,
+  }));
+}
+
+/** Geplante Begehungen */
+async function walkthroughDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  const list = await db.walkthrough.findMany({
+    where: { organizationId, status: "PLANNED", ...(f.until ? { plannedAt: { lte: f.until } } : {}), ...(f.siteId ? { siteId: f.siteId } : {}) },
+    include: { site: true, template: true },
+  });
+  return list.map((w) => ({
+    id: w.id, source: "walkthrough", sourceLabel: "Begehung", title: w.template.title, subject: [w.area, w.auditor].filter(Boolean).join(" · "),
+    dueAt: w.plannedAt, status: classifyDue(w.plannedAt, now), siteId: w.siteId, siteName: w.site?.name ?? null, href: `/walkthroughs/${w.id}`,
+  }));
+}
+
+/** Austausch ausgegebener PSA */
+async function ppeDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  const list = await db.ppeIssue.findMany({
+    where: { returnedAt: null, replaceDue: { not: null, ...(f.until ? { lte: f.until } : {}) }, item: { organizationId }, employee: { active: true, ...(f.siteId ? { siteId: f.siteId } : {}) } },
+    include: { item: true, employee: { include: { site: true } } },
+  });
+  return list.map((p) => ({
+    id: p.id, source: "ppe", sourceLabel: "PSA", title: `${p.item.name} austauschen`, subject: `${p.employee.lastName}, ${p.employee.firstName}`,
+    dueAt: p.replaceDue!, status: classifyDue(p.replaceDue!, now), siteId: p.employee.siteId, siteName: p.employee.site?.name ?? null, href: `/ppe`,
+  }));
+}
+
+/** Befristete Beauftragungen */
+async function appointmentDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  const list = await db.appointment.findMany({
+    where: { organizationId, endedAt: null, validUntil: { not: null, ...(f.until ? { lte: f.until } : {}) }, ...(f.siteId ? { siteId: f.siteId } : {}) },
+    include: { employee: true, site: true },
+  });
+  return list.map((a) => ({
+    id: a.id, source: "appointment", sourceLabel: "Beauftragung", title: `${APPOINTMENT_ROLES[a.role]?.label ?? a.role} endet`, subject: `${a.employee.lastName}, ${a.employee.firstName}`,
+    dueAt: a.validUntil!, status: classifyDue(a.validUntil!, now), siteId: a.siteId, siteName: a.site?.name ?? null, href: `/appointments`,
+  }));
+}
+
 export async function getDeadlines(organizationId: string, f: DeadlineFilter = {}, now = new Date()) {
   const parts = await Promise.all([
     inspectionDeadlines(organizationId, f, now),
@@ -243,6 +292,10 @@ export async function getDeadlines(organizationId: string, f: DeadlineFilter = {
     qualificationDeadlines(organizationId, f, now),
     actionDeadlines(organizationId, f, now),
     bgReportDeadlines(organizationId, f, now),
+    riskDeadlines(organizationId, f, now),
+    walkthroughDeadlines(organizationId, f, now),
+    ppeDeadlines(organizationId, f, now),
+    appointmentDeadlines(organizationId, f, now),
   ]);
   const all = parts.flat();
   return all

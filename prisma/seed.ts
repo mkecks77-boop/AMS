@@ -235,6 +235,59 @@ async function main() {
     ] });
   }
 
+  // Gefährdungsbeurteilung, Begehung, PSA, Beauftragte für Muster Metallbau
+  if ((await db.riskAssessment.count({ where: { organizationId: org.id } })) === 0) {
+    const now = new Date();
+    const werk = await db.site.findFirstOrThrow({ where: { organizationId: org.id, name: "Werk Nord" } });
+    const fert = await db.department.findFirst({ where: { organizationId: org.id, name: "Fertigung" } });
+    const sifa = await db.user.findUniqueOrThrow({ where: { email: "sifa@example.com" } });
+    const by = async (n: string) => db.employee.findFirstOrThrow({ where: { organizationId: org.id, lastName: n } });
+    const meister = await by("Meister"), dreher = await by("Dreher"), lagerE = await by("Lager");
+    const released = addMonths(now, -22);
+    await db.riskAssessment.create({ data: {
+      organizationId: org.id, title: "CNC-Drehmaschine M-001", kind: "GENERAL", siteId: werk.id, departmentId: fert?.id, scope: "Rüsten, Bedienen, Reinigen", participants: "Max Meister, Erik Extern (Sifa), Tom Dreher",
+      responsibleId: meister.id, status: "RELEASED", releasedAt: released, releasedById: sifa.id, reviewDue: addMonths(released, 24),
+      hazards: { create: [
+        { factor: "1", description: "Erfassen durch rotierendes Futter", probability: 3, severity: 5, measures: "Verriegelte Schutztür, Not-Halt, Unterweisung, keine Handschuhe an laufender Maschine", residualProbability: 1, residualSeverity: 5, sortOrder: 0 },
+        { factor: "1", description: "Schnittverletzungen durch Späne", probability: 4, severity: 2, measures: "Spänehaken, Schnittschutzhandschuhe beim Spänewechsel (Maschine steht)", residualProbability: 2, residualSeverity: 2, sortOrder: 1 },
+        { factor: "3", description: "Hautkontakt mit Kühlschmierstoff", probability: 4, severity: 2, measures: "Hautschutzplan, KSS-Pflege nach TRGS 611, Angebotsvorsorge Hauterkrankungen", residualProbability: 2, residualSeverity: 2, sortOrder: 2 },
+        { factor: "7", description: "Lärm > 80 dB(A)", probability: 3, severity: 3, measures: "Gehörschutz bereitstellen, Lärmbereich kennzeichnen", residualProbability: 2, residualSeverity: 2, sortOrder: 3 },
+      ] },
+    } });
+    await db.riskAssessment.create({ data: {
+      organizationId: org.id, title: "Psychische Belastung Fertigung", kind: "PSYCHOLOGICAL", siteId: werk.id, departmentId: fert?.id, responsibleId: meister.id,
+      hazards: { create: [{ factor: "10", description: "Zeitdruck durch Eilaufträge", probability: 4, severity: 3, measures: "", sortOrder: 0 }] },
+    } });
+    const tpl = await db.checklistTemplate.create({ data: {
+      organizationId: org.id, title: "Allgemeine Betriebsbegehung", description: "Grundcheckliste",
+      items: { create: [
+        { section: "Verkehrs- und Fluchtwege", text: "Fluchtwege und Notausgänge frei", sortOrder: 0 },
+        { section: "Brandschutz", text: "Feuerlöscher vorhanden, zugänglich und geprüft", sortOrder: 1 },
+        { section: "Erste Hilfe", text: "Verbandkasten vollständig", sortOrder: 2 },
+        { section: "Arbeitsmittel", text: "Schutzeinrichtungen vorhanden und wirksam", sortOrder: 3 },
+        { section: "Ordnung", text: "Keine Stolperstellen", sortOrder: 4 },
+      ] },
+    }, include: { items: true } });
+    const w = await db.walkthrough.create({ data: { organizationId: org.id, templateId: tpl.id, siteId: werk.id, area: "Halle 1", plannedAt: addMonths(now, -1), performedAt: addMonths(now, -1), auditor: "Erik Extern", participants: "Max Meister", status: "DONE", summary: "Insgesamt guter Zustand." } });
+    for (const it of tpl.items) {
+      const defect = it.sortOrder === 2;
+      await db.walkthroughAnswer.create({ data: { walkthroughId: w.id, itemId: it.id, result: defect ? "DEFECT" : "OK", note: defect ? "Pflaster und Einmalhandschuhe fehlen" : null } });
+    }
+    await db.action.create({ data: { organizationId: org.id, title: "Verbandkasten Halle 1 auffüllen", level: "ORGANIZATIONAL", priority: "MEDIUM", responsibleId: meister.id, dueDate: addMonths(now, 0), sourceType: "AUDIT", walkthroughId: w.id, createdById: sifa.id } });
+    await db.walkthrough.create({ data: { organizationId: org.id, templateId: tpl.id, siteId: (await db.site.findFirstOrThrow({ where: { organizationId: org.id, name: "Lager Süd" } })).id, area: "Halle 2", plannedAt: new Date(now.getTime() + 10 * 86400000), auditor: "Erik Extern" } });
+    const shoes = await db.ppeItem.create({ data: { organizationId: org.id, name: "Sicherheitsschuhe S3", category: "Fußschutz", standard: "DIN EN ISO 20345", replaceMonths: 12 } });
+    const glasses = await db.ppeItem.create({ data: { organizationId: org.id, name: "Schutzbrille", category: "Augen- und Gesichtsschutz", standard: "DIN EN 166" } });
+    await db.ppeIssue.createMany({ data: [
+      { itemId: shoes.id, employeeId: dreher.id, size: "43", issuedAt: addMonths(now, -11), replaceDue: addMonths(now, 1), receiptSigned: true },
+      { itemId: shoes.id, employeeId: lagerE.id, size: "39", issuedAt: addMonths(now, -2), replaceDue: addMonths(now, 10), receiptSigned: false },
+      { itemId: glasses.id, employeeId: dreher.id, issuedAt: addMonths(now, -11), receiptSigned: true },
+    ] });
+    await db.appointment.createMany({ data: [
+      { organizationId: org.id, employeeId: meister.id, role: "DUTY_TRANSFER", siteId: werk.id, scope: "Fertigung Halle 1 inkl. Instandhaltung", appointedAt: addMonths(now, -30), signed: true },
+      { organizationId: org.id, employeeId: dreher.id, role: "SAFETY_REP", siteId: werk.id, appointedAt: addMonths(now, -20), validUntil: addMonths(now, 2), signed: true },
+    ] });
+  }
+
   console.log("Demodaten angelegt. Passwort: Demo-Passwort1");
 }
 
