@@ -53,6 +53,10 @@ model Organization {
   appointments       Appointment[]
   asaMeetings        AsaMeeting[]
   timeEntries        TimeEntry[]
+  medicalCheckTypes  MedicalCheckType[]
+  contractors        Contractor[]
+  permits            Permit[]
+  legalRequirements  LegalRequirement[]
   /// Soll-Einsatzzeit der Sifa in Stunden pro Jahr (DGUV Vorschrift 2)
   sifaHoursTarget    Int?
   /// Ersthelferquote in Prozent (DGUV V1 § 26: 5 % Verwaltung/Handel, 10 % sonstige Betriebe)
@@ -184,6 +188,7 @@ model Site {
   riskAssessments RiskAssessment[]
   walkthroughs   Walkthrough[]
   appointments   Appointment[]
+  permits        Permit[]
   substanceUses   SubstanceUse[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -201,6 +206,7 @@ model Department {
   active               Boolean               @default(true)
   employees            Employee[]
   riskAssessments RiskAssessment[]
+  medicalRequirements MedicalRequirement[]
   trainingRequirements TrainingRequirement[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
@@ -234,6 +240,8 @@ model Employee {
   riskAssessments      RiskAssessment[]
   ppeIssues            PpeIssue[]
   appointments         Appointment[]
+  medicalRecords       MedicalRecord[]
+  legalRequirements    LegalRequirement[]
   qualifications       Qualification[]
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
@@ -732,6 +740,8 @@ model Action {
   walkthrough       Walkthrough?    @relation(fields: [walkthroughId], references: [id], onDelete: SetNull)
   asaMeetingId      String?
   asaMeeting        AsaMeeting?     @relation(fields: [asaMeetingId], references: [id], onDelete: SetNull)
+  legalRequirementId String?
+  legalRequirement   LegalRequirement? @relation(fields: [legalRequirementId], references: [id], onDelete: SetNull)
   createdById       String?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
@@ -982,4 +992,185 @@ model EmailLog {
   sent      Boolean
   error     String?
   createdAt DateTime @default(now())
+}
+
+// ───────────── Phase 8: Vorsorge, Fremdfirmen, Erlaubnisscheine, Rechtskataster ─────────────
+
+enum MedicalKind {
+  /// Pflichtvorsorge (§ 4 ArbMedVV) – ohne sie darf die Tätigkeit nicht ausgeübt werden
+  MANDATORY
+  /// Angebotsvorsorge (§ 5 ArbMedVV)
+  OFFER
+  /// Wunschvorsorge (§ 5a ArbMedVV)
+  WISH
+}
+
+model MedicalCheckType {
+  id             String               @id @default(cuid())
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  kind           MedicalKind
+  /// Anlass nach Anhang ArbMedVV
+  reason         String?
+  /// Abstand bis zur nächsten Vorsorge in Monaten
+  intervalMonths Int                  @default(36)
+  active         Boolean              @default(true)
+  requirements   MedicalRequirement[]
+  records        MedicalRecord[]
+
+  @@unique([organizationId, name])
+}
+
+model MedicalRequirement {
+  id           String           @id @default(cuid())
+  typeId       String
+  type         MedicalCheckType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  /// null = alle Beschäftigten
+  departmentId String?
+  department   Department?      @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@unique([typeId, departmentId])
+}
+
+enum MedicalOutcome {
+  /// Vorsorge durchgeführt (Vorsorgebescheinigung liegt vor)
+  DONE
+  /// Angebotsvorsorge angeboten, nicht wahrgenommen
+  DECLINED
+}
+
+/// Vorsorgekartei (§ 3 Abs. 4 ArbMedVV) – ausdrücklich ohne Befunde/Diagnosen
+model MedicalRecord {
+  id         String           @id @default(cuid())
+  typeId     String
+  type       MedicalCheckType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date       DateTime
+  outcome    MedicalOutcome   @default(DONE)
+  nextDue    DateTime?
+  createdAt  DateTime         @default(now())
+
+  @@index([employeeId, typeId])
+}
+
+model Contractor {
+  id               String             @id @default(cuid())
+  organizationId   String
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name             String
+  contactName      String?
+  phone            String?
+  email            String?
+  /// Betriebshaftpflicht nachgewiesen bis
+  insuranceUntil   DateTime?
+  blocked          Boolean            @default(false)
+  blockReason      String?
+  notes            String?
+  workers          ContractorWorker[]
+  permits          Permit[]
+  createdAt        DateTime           @default(now())
+
+  @@unique([organizationId, name])
+}
+
+model ContractorWorker {
+  id           String         @id @default(cuid())
+  contractorId String
+  contractor   Contractor     @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  name         String
+  /// Fremdfirmeneinweisung (§ 8 ArbSchG, § 5 DGUV V1)
+  briefedAt    DateTime?
+  briefedUntil DateTime?
+  active       Boolean        @default(true)
+  permits      PermitWorker[]
+  createdAt    DateTime       @default(now())
+}
+
+enum PermitType {
+  HOT_WORK
+  CONFINED_SPACE
+  HEIGHT
+  ELECTRICAL
+  EXCAVATION
+  OTHER
+}
+
+enum PermitStatus {
+  REQUESTED
+  APPROVED
+  ACTIVE
+  CLOSED
+  REJECTED
+}
+
+/// Erlaubnisschein für gefährliche Arbeiten
+model Permit {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  number         String
+  type           PermitType
+  siteId         String?
+  site           Site?          @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  location       String
+  description    String
+  contractorId   String?
+  contractor     Contractor?    @relation(fields: [contractorId], references: [id], onDelete: SetNull)
+  validFrom      DateTime
+  validTo        DateTime
+  status         PermitStatus   @default(REQUESTED)
+  requestedById  String?
+  approvedById   String?
+  approvedAt     DateTime?
+  /// bestätigte Sicherheitsmaßnahmen (Schlüssel der Checkliste)
+  checks         String[]
+  activatedAt    DateTime?
+  closedAt       DateTime?
+  /// Brandwache bis (Heißarbeiten)
+  fireWatchUntil DateTime?
+  note           String?
+  workers        PermitWorker[]
+  createdAt      DateTime       @default(now())
+
+  @@unique([organizationId, number])
+}
+
+model PermitWorker {
+  permitId String
+  permit   Permit           @relation(fields: [permitId], references: [id], onDelete: Cascade)
+  workerId String
+  worker   ContractorWorker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@id([permitId, workerId])
+}
+
+enum ComplianceStatus {
+  NOT_EVALUATED
+  FULFILLED
+  PARTIAL
+  NOT_FULFILLED
+  NOT_RELEVANT
+}
+
+/// Rechtskataster: Vorschrift → Pflicht → Bewertung
+model LegalRequirement {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  area           String
+  law            String
+  reference      String?
+  obligation     String
+  status         ComplianceStatus @default(NOT_EVALUATED)
+  evidence       String?
+  responsibleId  String?
+  responsible    Employee?        @relation(fields: [responsibleId], references: [id], onDelete: SetNull)
+  evaluatedAt    DateTime?
+  reviewDue      DateTime?
+  actions        Action[]
+  createdAt      DateTime         @default(now())
+
+  @@index([organizationId, area])
 }

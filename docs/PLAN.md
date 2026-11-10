@@ -67,6 +67,7 @@ zusätzlich geplant: PostgreSQL Row-Level Security.
 
 ## Mögliche Erweiterungen
 - KI-Assistent (Entwürfe für GBU/BA, SDB auslesen) – erfordert Entscheidung zu Anbieter und Datenschutz
-- Arbeitsmedizinische Vorsorge (ArbMedVV), Fremdfirmen & Erlaubnisscheine, Rechtskataster, Brandschutz & Notfall
+- ~~Arbeitsmedizinische Vorsorge, Fremdfirmen & Erlaubnisscheine, Rechtskataster~~ ✅ Phase 8
+- Brandschutz & Notfall (Räumungsübungen, Alarmplan)
 - Datei-Uploads (SDB, Zertifikate, Fotos) in EU-Objektspeicher
 - Microsoft-Login (SSO) je Unternehmen, PostgreSQL Row-Level Security als zusätzliche Mandantentrennung

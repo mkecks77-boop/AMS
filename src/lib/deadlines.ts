@@ -13,7 +13,7 @@ import { nextAsaDue } from "./asa";
  */
 export interface Deadline {
   id: string;
-  source: "inspection" | "sds" | "instruction" | "training" | "qualification" | "action" | "bg_report" | "risk" | "walkthrough" | "ppe" | "appointment" | "asa";
+  source: "inspection" | "sds" | "instruction" | "training" | "qualification" | "action" | "bg_report" | "risk" | "walkthrough" | "ppe" | "appointment" | "asa" | "medical" | "contractor" | "legal";
   sourceLabel: string;
   title: string;
   subject: string;
@@ -306,6 +306,57 @@ async function asaDeadlines(organizationId: string, f: DeadlineFilter, now: Date
   return out;
 }
 
+/** Arbeitsmedizinische Vorsorge: letzte Vorsorge je Person und erforderlichem Anlass */
+async function medicalDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  const recs = await db.medicalRecord.findMany({
+    where: { nextDue: { not: null }, type: { organizationId, active: true, requirements: { some: {} } }, employee: { active: true, ...(f.siteId ? { siteId: f.siteId } : {}) } },
+    include: { type: { include: { requirements: true } }, employee: { include: { site: true } } },
+    orderBy: { date: "desc" },
+  });
+  const seen = new Set<string>();
+  const out: Deadline[] = [];
+  for (const r of recs) {
+    const k = `${r.employeeId}:${r.typeId}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    if (!r.type.requirements.some((q) => !q.departmentId || q.departmentId === r.employee.departmentId)) continue;
+    if (f.until && r.nextDue! > f.until) continue;
+    out.push({
+      id: r.id, source: "medical", sourceLabel: "Vorsorge", title: r.type.name, subject: `${r.employee.lastName}, ${r.employee.firstName}`,
+      dueAt: r.nextDue!, status: classifyDue(r.nextDue!, now), siteId: r.employee.siteId, siteName: r.employee.site?.name ?? null, href: "/medical",
+      info: r.type.kind === "MANDATORY" ? "Pflichtvorsorge" : undefined,
+    });
+  }
+  return out;
+}
+
+/** Fremdfirmen: Haftpflichtnachweis und Einweisungen laufen ab */
+async function contractorDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  if (f.siteId) return [];
+  const list = await db.contractor.findMany({ where: { organizationId, blocked: false }, include: { workers: { where: { active: true, briefedUntil: { not: null } } } } });
+  const out: Deadline[] = [];
+  for (const c of list) {
+    if (c.insuranceUntil && (!f.until || c.insuranceUntil <= f.until)) {
+      out.push({ id: c.id, source: "contractor", sourceLabel: "Fremdfirma", title: "Haftpflichtnachweis läuft ab", subject: c.name, dueAt: c.insuranceUntil, status: classifyDue(c.insuranceUntil, now), siteId: null, siteName: null, href: `/contractors/${c.id}` });
+    }
+    for (const w of c.workers) {
+      if (f.until && w.briefedUntil! > f.until) continue;
+      out.push({ id: w.id, source: "contractor", sourceLabel: "Fremdfirma", title: "Fremdfirmeneinweisung erneuern", subject: `${w.name} (${c.name})`, dueAt: w.briefedUntil!, status: classifyDue(w.briefedUntil!, now), siteId: null, siteName: null, href: `/contractors/${c.id}` });
+    }
+  }
+  return out;
+}
+
+/** Rechtskataster: erneute Bewertung */
+async function legalDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  if (f.siteId) return [];
+  const list = await db.legalRequirement.findMany({ where: { organizationId, reviewDue: { not: null, ...(f.until ? { lte: f.until } : {}) } } });
+  return list.map((l) => ({
+    id: l.id, source: "legal", sourceLabel: "Rechtskataster", title: "Einhaltung erneut bewerten", subject: `${l.law}${l.reference ? ` ${l.reference}` : ""}: ${l.obligation}`,
+    dueAt: l.reviewDue!, status: classifyDue(l.reviewDue!, now), siteId: null, siteName: null, href: "/legal",
+  }));
+}
+
 export async function getDeadlines(organizationId: string, f: DeadlineFilter = {}, now = new Date()) {
   const parts = await Promise.all([
     inspectionDeadlines(organizationId, f, now),
@@ -320,6 +371,9 @@ export async function getDeadlines(organizationId: string, f: DeadlineFilter = {
     ppeDeadlines(organizationId, f, now),
     appointmentDeadlines(organizationId, f, now),
     asaDeadlines(organizationId, f, now),
+    medicalDeadlines(organizationId, f, now),
+    contractorDeadlines(organizationId, f, now),
+    legalDeadlines(organizationId, f, now),
   ]);
   const all = parts.flat();
   return all

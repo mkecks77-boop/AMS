@@ -81,6 +81,22 @@ const LABELS: Record<string, string> = {
   "password.changed": "Passwort geändert",
   "totp.enabled": "Zwei-Faktor-Anmeldung aktiviert",
   "totp.disabled": "Zwei-Faktor-Anmeldung deaktiviert",
+  "medical.requirements": "Vorsorge-Zuordnung geändert",
+  "medical.recorded": "Vorsorge erfasst",
+  "medical.type_created": "Vorsorgeanlass angelegt",
+  "contractor.created": "Fremdfirma angelegt",
+  "contractor.updated": "Fremdfirma geändert",
+  "contractor.blocked": "Fremdfirma gesperrt",
+  "contractor.unblocked": "Fremdfirma entsperrt",
+  "contractor.worker_added": "Fremdfirmen-Person hinzugefügt",
+  "contractor.briefed": "Fremdfirmeneinweisung",
+  "permit.requested": "Erlaubnisschein beantragt",
+  "permit.approved": "Erlaubnisschein genehmigt",
+  "permit.rejected": "Erlaubnisschein abgelehnt",
+  "permit.activated": "Arbeiten freigegeben",
+  "permit.closed": "Erlaubnisschein abgeschlossen",
+  "legal.created": "Rechtsanforderung angelegt",
+  "legal.evaluated": "Rechtsanforderung bewertet",
 };
 
 export default async function AuditPage() {
