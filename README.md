@@ -5,7 +5,7 @@ Online-Werkzeug für Fachkräfte für Arbeitssicherheit (intern und extern) – 
 
 Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 
-## Stand: Phase 1 – Grundgerüst, Mandanten & Nutzerverwaltung
+## Stand: Phase 1–2
 
 | Bereich | Umfang |
 |---|---|
@@ -16,6 +16,12 @@ Gesamtplanung: [docs/PLAN.md](docs/PLAN.md)
 | Nutzerverwaltung | Einladen per Link (7 Tage), bestehende Konten werden direkt hinzugefügt, Rolle ändern, deaktivieren, Passwort-Link (24 h) |
 | Schutzregeln | Letzter Admin kann nicht entfernt werden; ein Kunde kann das Passwort einer Person, die auch anderen Unternehmen angehört (z. B. externe Sifa), nicht zurücksetzen |
 | Protokoll | Alle Änderungen mit Person und Zeitpunkt je Unternehmen |
+| Stammdaten | Standorte, Abteilungen, Mitarbeiterstamm (auch ohne Login, Azubi-Kennzeichen, Ein-/Austritt) |
+| Anlagen & Maschinen | Verzeichnis mit Hersteller, Typ, Baujahr, CE, Konformitätserklärung, Betriebsanleitung, Standort, Verantwortlichem; Status (in Betrieb, gesperrt, Reparatur, stillgelegt, verschrottet) mit Verlauf |
+| Prüfpflichten | Beliebig viele je Anlage, Prüfkatalog mit 19 Vorlagen (DGUV V3, Leitern, Regale, Krane, Stapler, Druckbehälter, Feuerlöscher …), Intervall, Rechtsgrundlage, Art des Prüfers |
+| Prüfungen | Prüfprotokoll; nächste Fälligkeit automatisch; „nicht bestanden“ sperrt die Anlage, Freigabe nur mit Begründung |
+| Fristenkalender | Alle Fristen nach Monat, Ampel (überfällig / ≤ 30 / ≤ 90 Tage), Filter nach Standort und Zeitraum, CSV-Export (Excel) |
+| Dashboard | Überfällige und bald fällige Prüfungen, gesperrte Anlagen |
 
 E-Mail-Versand folgt später – bis dahin wird der Einladungslink angezeigt und vom Admin weitergegeben.
 
@@ -41,7 +47,7 @@ Demo-Zugänge (Passwort `Demo-Passwort1`):
 |---|---|
 | betreiber@example.com | Plattform-Betreiber |
 | sifa@example.com | Externe Sifa in beiden Demo-Unternehmen |
-| admin@metallbau.example.com | Unternehmens-Admin Muster Metallbau |
+| admin@metallbau.example.com | Unternehmens-Admin Muster Metallbau (mit Demo-Anlagen und Prüffristen) |
 | meister@metallbau.example.com | Führungskraft Muster Metallbau |
 | admin@logistik.example.com | Unternehmens-Admin Beispiel Logistik |
 

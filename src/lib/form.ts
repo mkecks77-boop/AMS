@@ -13,3 +13,14 @@ export function str(fd: FormData, key: string): string {
 export function appUrl(path: string) {
   return `${process.env.APP_URL ?? "http://localhost:3000"}${path}`;
 }
+
+export function bool(fd: FormData, key: string): boolean {
+  return fd.get(key) === "on" || fd.get(key) === "true";
+}
+
+export function int(fd: FormData, key: string): number | null {
+  const v = str(fd, key);
+  if (!v) return null;
+  const n = Number(v);
+  return Number.isInteger(n) ? n : NaN;
+}

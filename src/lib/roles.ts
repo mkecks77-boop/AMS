@@ -13,14 +13,30 @@ export const ROLES = Object.keys(ROLE_LABELS) as Role[];
 export type Permission =
   | "users.manage"
   | "audit.view"
-  | "dashboard.view";
+  | "dashboard.view"
+  /** Standorte, Abteilungen, Mitarbeiterstamm pflegen */
+  | "masterdata.manage"
+  | "masterdata.view"
+  | "equipment.view"
+  | "equipment.manage"
+  | "inspections.record"
+  | "deadlines.view";
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  ORG_ADMIN: ["users.manage", "audit.view", "dashboard.view"],
-  SAFETY_OFFICER: ["audit.view", "dashboard.view"],
-  MANAGER: ["dashboard.view"],
-  INSPECTOR: ["dashboard.view"],
-  EMPLOYEE: ["dashboard.view"],
+  ORG_ADMIN: [
+    "users.manage", "audit.view", "dashboard.view", "masterdata.manage", "masterdata.view",
+    "equipment.view", "equipment.manage", "inspections.record", "deadlines.view",
+  ],
+  SAFETY_OFFICER: [
+    "audit.view", "dashboard.view", "masterdata.manage", "masterdata.view",
+    "equipment.view", "equipment.manage", "inspections.record", "deadlines.view",
+  ],
+  MANAGER: [
+    "dashboard.view", "masterdata.view", "equipment.view", "equipment.manage",
+    "inspections.record", "deadlines.view",
+  ],
+  INSPECTOR: ["dashboard.view", "equipment.view", "inspections.record", "deadlines.view"],
+  EMPLOYEE: ["dashboard.view", "equipment.view"],
 };
 
 export interface AccessContext {
