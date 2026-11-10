@@ -20,23 +20,36 @@ export type Permission =
   | "equipment.view"
   | "equipment.manage"
   | "inspections.record"
-  | "deadlines.view";
+  | "deadlines.view"
+  | "substances.view"
+  /** Gefahrstoff beantragen / Daten pflegen */
+  | "substances.edit"
+  /** Gefahrstoff freigeben oder ablehnen */
+  | "substances.approve"
+  | "instructions.view"
+  | "instructions.edit"
+  | "instructions.release";
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ORG_ADMIN: [
     "users.manage", "audit.view", "dashboard.view", "masterdata.manage", "masterdata.view",
     "equipment.view", "equipment.manage", "inspections.record", "deadlines.view",
+    "substances.view", "substances.edit", "substances.approve",
+    "instructions.view", "instructions.edit", "instructions.release",
   ],
   SAFETY_OFFICER: [
     "audit.view", "dashboard.view", "masterdata.manage", "masterdata.view",
     "equipment.view", "equipment.manage", "inspections.record", "deadlines.view",
+    "substances.view", "substances.edit", "substances.approve",
+    "instructions.view", "instructions.edit", "instructions.release",
   ],
   MANAGER: [
     "dashboard.view", "masterdata.view", "equipment.view", "equipment.manage",
     "inspections.record", "deadlines.view",
+    "substances.view", "substances.edit", "instructions.view", "instructions.edit", "instructions.release",
   ],
-  INSPECTOR: ["dashboard.view", "equipment.view", "inspections.record", "deadlines.view"],
-  EMPLOYEE: ["dashboard.view", "equipment.view"],
+  INSPECTOR: ["dashboard.view", "equipment.view", "inspections.record", "deadlines.view", "substances.view", "instructions.view"],
+  EMPLOYEE: ["dashboard.view", "equipment.view", "substances.view", "instructions.view"],
 };
 
 export interface AccessContext {

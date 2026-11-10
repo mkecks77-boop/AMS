@@ -10,6 +10,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/", label: "Übersicht", show: true },
     { href: "/deadlines", label: "Fristen", show: ctx.can("deadlines.view") },
     { href: "/equipment", label: "Anlagen", show: ctx.can("equipment.view") },
+    { href: "/substances", label: "Gefahrstoffe", show: ctx.can("substances.view") },
+    { href: "/instructions", label: "Betriebsanweisungen", show: ctx.can("instructions.view") },
     { href: "/employees", label: "Mitarbeiter", show: ctx.can("masterdata.view") },
     { href: "/sites", label: "Standorte", show: ctx.can("masterdata.manage") },
     { href: "/users", label: "Nutzer", show: ctx.can("users.manage") },

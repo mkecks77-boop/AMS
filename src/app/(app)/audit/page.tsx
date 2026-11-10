@@ -25,6 +25,20 @@ const LABELS: Record<string, string> = {
   "obligation.created": "Prüfpflicht angelegt",
   "obligation.updated": "Prüfpflicht geändert",
   "inspection.recorded": "Prüfung erfasst",
+  "substance.requested": "Gefahrstoff beantragt",
+  "substance.updated": "Gefahrstoff geändert",
+  "substance.approved": "Gefahrstoff freigegeben",
+  "substance.rejected": "Gefahrstoff abgelehnt",
+  "substance.phased_out": "Gefahrstoff außer Einsatz",
+  "substance.use_added": "Einsatzort hinzugefügt",
+  "substance.use_removed": "Einsatzort entfernt",
+  "instruction.created": "Betriebsanweisung angelegt",
+  "instruction.updated": "Betriebsanweisung bearbeitet",
+  "instruction.submitted": "BA zur Freigabe vorgelegt",
+  "instruction.released": "Betriebsanweisung freigegeben",
+  "instruction.returned": "BA zurück in Bearbeitung",
+  "instruction.new_version": "Neue BA-Version",
+  "instruction.withdrawn": "Betriebsanweisung zurückgezogen",
 };
 
 export default async function AuditPage() {

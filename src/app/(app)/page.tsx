@@ -10,8 +10,6 @@ export const metadata = { title: "Übersicht" };
 const PLANNED = [
   "Arbeitsunfälle & Verbandbuch",
   "Schulungen & Qualifikationen",
-  "Gefahrstoffverzeichnis",
-  "Betriebsanweisungen",
   "Gefährdungsbeurteilungen",
   "Maßnahmen",
 ];
@@ -23,7 +21,12 @@ export default async function Dashboard() {
   const in90 = new Date();
   in90.setUTCDate(in90.getUTCDate() + 90);
 
-  const [members, equipmentCount, locked, deadlines] = await Promise.all([
+  const [requested, baInReview, missingBa, members, equipmentCount, locked, deadlines] = await Promise.all([
+    ctx.can("substances.approve") ? db.hazardousSubstance.count({ where: { organizationId: orgId, status: "REQUESTED" } }) : 0,
+    ctx.can("instructions.release") ? db.operatingInstruction.count({ where: { organizationId: orgId, status: "IN_REVIEW" } }) : 0,
+    ctx.can("instructions.edit")
+      ? db.hazardousSubstance.count({ where: { organizationId: orgId, status: "APPROVED", instructions: { none: { status: "RELEASED" } } } })
+      : 0,
     db.membership.count({ where: { organizationId: orgId, active: true } }),
     db.equipment.count({ where: { organizationId: orgId, status: { notIn: ["SCRAPPED", "DECOMMISSIONED"] } } }),
     db.equipment.findMany({ where: { organizationId: orgId, status: "LOCKED" }, orderBy: { inventoryNumber: "asc" } }),
@@ -33,17 +36,20 @@ export default async function Dashboard() {
   const urgent = deadlines.filter((d) => d.status === "overdue" || d.status === "due30").slice(0, 10);
 
   const tiles = [
-    { label: "Überfällige Prüfungen", value: counts.overdue, href: "/deadlines?status=overdue", alert: counts.overdue > 0, show: showDeadlines },
+    { label: "Überfällige Fristen", value: counts.overdue, href: "/deadlines?status=overdue", alert: counts.overdue > 0, show: showDeadlines },
     { label: "Fällig in 30 Tagen", value: counts.due30, href: "/deadlines?status=due30", show: showDeadlines },
     { label: "Gesperrte Anlagen", value: locked.length, href: "/equipment?status=LOCKED", alert: locked.length > 0, show: true },
     { label: "Anlagen in Betrieb", value: equipmentCount, href: "/equipment", show: true },
+    { label: "Gefahrstoff-Anträge", value: requested, href: "/substances?status=REQUESTED", alert: requested > 0, show: ctx.can("substances.approve") },
+    { label: "BA zur Freigabe", value: baInReview, href: "/instructions?status=IN_REVIEW", show: ctx.can("instructions.release") },
+    { label: "Gefahrstoffe ohne gültige BA", value: missingBa, href: "/substances", alert: missingBa > 0, show: ctx.can("instructions.edit") },
     { label: "Aktive Nutzer", value: members, href: "/users", show: ctx.can("users.manage") },
   ].filter((t) => t.show);
 
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold">{ctx.organization.name}</h1>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {tiles.map((t) => (
           <Link key={t.label} href={t.href} className={`card !p-4 ${t.alert ? "border-red-300 bg-red-50" : ""}`}>
             <p className="text-sm text-slate-500">{t.label}</p>
@@ -59,13 +65,14 @@ export default async function Dashboard() {
             <Link href="/deadlines" className="text-sm text-[var(--brand)] hover:underline">Alle Fristen</Link>
           </div>
           {urgent.length === 0 ? (
-            <p className="text-sm text-slate-500">Keine überfälligen oder in den nächsten 30 Tagen fälligen Prüfungen.</p>
+            <p className="text-sm text-slate-500">Keine überfälligen oder in den nächsten 30 Tagen fälligen Fristen.</p>
           ) : (
             <ul className="divide-y divide-slate-100 text-sm">
               {urgent.map((d) => (
-                <li key={d.id} className="flex flex-wrap items-center gap-3 py-2">
+                <li key={`${d.source}-${d.id}`} className="flex flex-wrap items-center gap-3 py-2">
                   <span className="w-24">{formatDate(d.dueAt)}</span>
                   <DueBadge status={d.status} />
+                  <span className="text-slate-500">{d.sourceLabel}</span>
                   <Link href={d.href} className="font-medium text-[var(--brand)] hover:underline">{d.title}</Link>
                   <span className="text-slate-500">{d.subject}</span>
                 </li>

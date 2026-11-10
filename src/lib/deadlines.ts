@@ -3,12 +3,13 @@ import { classifyDue, type DueStatus } from "./dates";
 import { INACTIVE_STATUSES } from "./equipment";
 
 /**
- * Einheitliche Frist aus beliebigem Modul. Weitere Module (Unterweisungen, Qualifikationen,
+ * Einheitliche Frist aus beliebigem Modul (Standortfilter: Prüfungen über die Anlage,
+ * SDB über die Einsatzorte, Betriebsanweisungen über die verknüpfte Anlage). Weitere Module (Unterweisungen, Qualifikationen,
  * Gefährdungsbeurteilungen, SDB …) liefern später ebenfalls Deadline-Objekte.
  */
 export interface Deadline {
   id: string;
-  source: "inspection";
+  source: "inspection" | "sds" | "instruction";
   sourceLabel: string;
   title: string;
   subject: string;
@@ -56,8 +57,66 @@ async function inspectionDeadlines(organizationId: string, f: DeadlineFilter, no
   }));
 }
 
+/** Wiedervorlage Sicherheitsdatenblatt (freigegebene Gefahrstoffe) */
+async function sdsDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  const list = await db.hazardousSubstance.findMany({
+    where: {
+      organizationId,
+      status: "APPROVED",
+      sdsReviewDue: { not: null, ...(f.until ? { lte: f.until } : {}) },
+      ...(f.siteId ? { uses: { some: { siteId: f.siteId } } } : {}),
+    },
+    include: { uses: { include: { site: true } } },
+  });
+  return list.map((s) => {
+    const sites = [...new Set(s.uses.map((u) => u.site?.name).filter(Boolean))];
+    return {
+      id: s.id,
+      source: "sds",
+      sourceLabel: "Sicherheitsdatenblatt",
+      title: "Aktualität des SDB prüfen",
+      subject: s.name + (s.manufacturer ? ` (${s.manufacturer})` : ""),
+      dueAt: s.sdsReviewDue!,
+      status: classifyDue(s.sdsReviewDue!, now),
+      siteId: null,
+      siteName: sites.join(", ") || null,
+      href: `/substances/${s.id}`,
+    };
+  });
+}
+
+/** Überprüfung freigegebener Betriebsanweisungen */
+async function instructionDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  const list = await db.operatingInstruction.findMany({
+    where: {
+      organizationId,
+      status: "RELEASED",
+      reviewDue: { not: null, ...(f.until ? { lte: f.until } : {}) },
+      ...(f.siteId ? { equipment: { siteId: f.siteId } } : {}),
+    },
+    include: { equipment: { include: { site: true } } },
+  });
+  return list.map((i) => ({
+    id: i.id,
+    source: "instruction",
+    sourceLabel: "Betriebsanweisung",
+    title: "Betriebsanweisung überprüfen",
+    subject: `${i.title} (V${i.version})`,
+    dueAt: i.reviewDue!,
+    status: classifyDue(i.reviewDue!, now),
+    siteId: i.equipment?.siteId ?? null,
+    siteName: i.equipment?.site?.name ?? null,
+    href: `/instructions/${i.id}`,
+  }));
+}
+
 export async function getDeadlines(organizationId: string, f: DeadlineFilter = {}, now = new Date()) {
-  const all = [...(await inspectionDeadlines(organizationId, f, now))];
+  const parts = await Promise.all([
+    inspectionDeadlines(organizationId, f, now),
+    sdsDeadlines(organizationId, f, now),
+    instructionDeadlines(organizationId, f, now),
+  ]);
+  const all = parts.flat();
   return all
     .filter((d) => !f.status || d.status === f.status)
     .sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());
