@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/dates";
 import { canRelease, STATUS_LABELS } from "@/lib/instructions";
 import { requireOrg } from "@/lib/session";
 import { workflow } from "../actions";
+import { fromInstruction } from "../../trainings/actions";
 import { InstructionForm } from "../InstructionForm";
 import { instructionOptions } from "../options";
 
@@ -65,6 +66,11 @@ export default async function InstructionDetail({ params, searchParams }: { para
             {i.status === "IN_REVIEW" && canReleaseIt && <Step id={i.id} step="return" label="Zurück in Bearbeitung" note />}
             {i.status === "RELEASED" && <Step id={i.id} step="version" label="Neue Version erstellen" />}
             {i.status === "RELEASED" && canReleaseIt && <Step id={i.id} step="withdraw" label="Zurückziehen" />}
+            {i.status === "RELEASED" && ctx.can("trainings.manage") && (
+              <ActionForm action={fromInstruction} submitLabel="Unterweisung daraus erstellen" className="">
+                <input type="hidden" name="instructionId" value={i.id} />
+              </ActionForm>
+            )}
           </div>
         </section>
       )}

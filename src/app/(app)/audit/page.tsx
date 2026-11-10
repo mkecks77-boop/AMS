@@ -39,6 +39,14 @@ const LABELS: Record<string, string> = {
   "instruction.returned": "BA zurück in Bearbeitung",
   "instruction.new_version": "Neue BA-Version",
   "instruction.withdrawn": "Betriebsanweisung zurückgezogen",
+  "training.created": "Unterweisungsthema angelegt",
+  "training.updated": "Unterweisungsthema geändert",
+  "training.requirements": "Zielgruppe festgelegt",
+  "training.session_recorded": "Unterweisung erfasst",
+  "qualification.added": "Qualifikation erfasst",
+  "qualification.removed": "Qualifikation entfernt",
+  "qualification_type.created": "Qualifikationsart angelegt",
+  "organization.rates": "Quoten geändert",
 };
 
 export default async function AuditPage() {

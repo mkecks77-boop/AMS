@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { classifyDue, type DueStatus } from "./dates";
 import { INACTIVE_STATUSES } from "./equipment";
+import { isRequired } from "./trainings";
 
 /**
  * Einheitliche Frist aus beliebigem Modul (Standortfilter: Prüfungen über die Anlage,
@@ -9,7 +10,7 @@ import { INACTIVE_STATUSES } from "./equipment";
  */
 export interface Deadline {
   id: string;
-  source: "inspection" | "sds" | "instruction";
+  source: "inspection" | "sds" | "instruction" | "training" | "qualification";
   sourceLabel: string;
   title: string;
   subject: string;
@@ -110,11 +111,81 @@ async function instructionDeadlines(organizationId: string, f: DeadlineFilter, n
   }));
 }
 
+/** Wiederholung von Unterweisungen: jeweils letzter Nachweis je Person und Pflichtthema */
+async function trainingDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  const records = await db.trainingRecord.findMany({
+    where: {
+      validUntil: { not: null },
+      topic: { organizationId, active: true, requirements: { some: {} } },
+      employee: { active: true, ...(f.siteId ? { siteId: f.siteId } : {}) },
+    },
+    include: { topic: { include: { requirements: true } }, employee: { include: { site: true } } },
+    orderBy: { completedAt: "desc" },
+  });
+  const seen = new Set<string>();
+  const out: Deadline[] = [];
+  for (const r of records) {
+    const key = `${r.employeeId}:${r.topicId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (!isRequired(r.topic.requirements, r.employee)) continue;
+    if (f.until && r.validUntil! > f.until) continue;
+    out.push({
+      id: r.id,
+      source: "training",
+      sourceLabel: "Unterweisung",
+      title: r.topic.title,
+      subject: `${r.employee.lastName}, ${r.employee.firstName}`,
+      dueAt: r.validUntil!,
+      status: classifyDue(r.validUntil!, now),
+      siteId: r.employee.siteId,
+      siteName: r.employee.site?.name ?? null,
+      href: `/trainings/${r.topicId}`,
+    });
+  }
+  return out;
+}
+
+/** Ablauf von Qualifikationen (jeweils die neueste je Person und Art) */
+async function qualificationDeadlines(organizationId: string, f: DeadlineFilter, now: Date): Promise<Deadline[]> {
+  const quals = await db.qualification.findMany({
+    where: {
+      validUntil: { not: null },
+      employee: { organizationId, active: true, ...(f.siteId ? { siteId: f.siteId } : {}) },
+    },
+    include: { type: true, employee: { include: { site: true } } },
+    orderBy: { acquiredAt: "desc" },
+  });
+  const seen = new Set<string>();
+  const out: Deadline[] = [];
+  for (const q of quals) {
+    const key = `${q.employeeId}:${q.typeId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (f.until && q.validUntil! > f.until) continue;
+    out.push({
+      id: q.id,
+      source: "qualification",
+      sourceLabel: "Qualifikation",
+      title: `${q.type.name} läuft ab`,
+      subject: `${q.employee.lastName}, ${q.employee.firstName}`,
+      dueAt: q.validUntil!,
+      status: classifyDue(q.validUntil!, now),
+      siteId: q.employee.siteId,
+      siteName: q.employee.site?.name ?? null,
+      href: `/qualifications`,
+    });
+  }
+  return out;
+}
+
 export async function getDeadlines(organizationId: string, f: DeadlineFilter = {}, now = new Date()) {
   const parts = await Promise.all([
     inspectionDeadlines(organizationId, f, now),
     sdsDeadlines(organizationId, f, now),
     instructionDeadlines(organizationId, f, now),
+    trainingDeadlines(organizationId, f, now),
+    qualificationDeadlines(organizationId, f, now),
   ]);
   const all = parts.flat();
   return all
