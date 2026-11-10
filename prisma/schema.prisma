@@ -1,0 +1,138 @@
+// AMS – Datenmodell
+// Mandantenfähig: Jedes Unternehmen (Organization) ist ein Mandant.
+// Fachdaten späterer Module tragen immer eine organizationId.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Rolle einer Person innerhalb eines Unternehmens
+enum Role {
+  /// Verwaltet Nutzer, Standorte, Stammdaten des Unternehmens
+  ORG_ADMIN
+  /// Fachkraft für Arbeitssicherheit (intern oder extern)
+  SAFETY_OFFICER
+  /// Führungskraft
+  MANAGER
+  /// Prüfer/in (befähigte Person, auch extern)
+  INSPECTOR
+  /// Mitarbeitende: melden, lesen, Unterweisungen absolvieren
+  EMPLOYEE
+}
+
+/// Unternehmen = Mandant
+model Organization {
+  id          String       @id @default(cuid())
+  name        String
+  /// Kurzname für URLs und Anzeige, eindeutig
+  slug        String       @unique
+  active      Boolean      @default(true)
+  memberships Membership[]
+  invitations Invitation[]
+  auditLogs   AuditLog[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model User {
+  id              String       @id @default(cuid())
+  email           String       @unique
+  name            String
+  /// null, solange die Einladung nicht angenommen wurde
+  passwordHash    String?
+  /// Betreiber der Plattform: legt Unternehmen an
+  isPlatformAdmin Boolean      @default(false)
+  active          Boolean      @default(true)
+  lastLoginAt     DateTime?
+  memberships     Membership[]
+  sessions        Session[]
+  passwordResets  PasswordReset[]
+  invitationsSent Invitation[] @relation("InvitedBy")
+  auditLogs       AuditLog[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+/// Zugehörigkeit einer Person zu einem Unternehmen mit Rolle.
+/// Eine externe Sifa hat mehrere Memberships.
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           Role
+  /// Externe Person (z. B. externe Sifa, externer Prüfer)
+  external       Boolean      @default(false)
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+/// Einladung per Link (auch für Passwort-Zurücksetzen genutzt)
+model Invitation {
+  id             String       @id @default(cuid())
+  email          String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           Role
+  external       Boolean      @default(false)
+  /// SHA-256 des Tokens – das Token selbst wird nie gespeichert
+  tokenHash      String       @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  invitedById    String?
+  invitedBy      User?        @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+}
+
+model Session {
+  id                   String   @id @default(cuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// SHA-256 des Cookie-Tokens
+  tokenHash            String   @unique
+  /// aktuell gewähltes Unternehmen (Umschalter)
+  activeOrganizationId String?
+  expiresAt            DateTime
+  createdAt            DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Änderungsprotokoll: wer hat was wann geändert
+model AuditLog {
+  id             String        @id @default(cuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action         String
+  entity         String
+  entityId       String?
+  details        Json?
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId, createdAt])
+}
+
+/// Link zum Setzen eines neuen Passworts (vom Admin erzeugt)
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
